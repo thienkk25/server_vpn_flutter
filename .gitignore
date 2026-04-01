@@ -75,3 +75,4 @@ typings/
 .project
 .classpath
 serviceAccountKey.json
+dist/
