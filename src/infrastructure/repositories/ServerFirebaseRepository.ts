@@ -27,8 +27,8 @@ export class ServerFirebaseRepository implements IServerRepository {
         servers.push(doc.data() as ServerEntity);
       });
       return servers;
-    } catch (error) {
-      console.error("Error fetching from Firebase, returning dummy data...", error);
+    } catch (error: any) {
+      console.error("Error fetching from Firebase, returning dummy data...", error.message || error);
       return dummyVpnServers;
     }
   }
