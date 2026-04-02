@@ -16,13 +16,13 @@ export class ServerFirebaseRepository implements IServerRepository {
     try {
       const snapshot = await firestoreDb.collection(this.collectionName).get();
       const servers: ServerEntity[] = [];
-      
+
       if (snapshot.empty) {
         console.warn("No servers found in Firebase, seeding dummy data and returning it...");
         await this.seedData(dummyVpnServers);
         return dummyVpnServers;
       }
-      
+
       snapshot.forEach((doc) => {
         servers.push(doc.data() as ServerEntity);
       });
@@ -39,7 +39,7 @@ export class ServerFirebaseRepository implements IServerRepository {
       console.warn("Cannot seed dummy data because Firebase DB is not initialized.");
       return;
     }
-    
+
     try {
       const batch = firestoreDb.batch();
       servers.forEach((server) => {
