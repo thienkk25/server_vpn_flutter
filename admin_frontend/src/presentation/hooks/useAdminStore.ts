@@ -18,6 +18,7 @@ interface AdminState {
     users: UserEntity[];
     isLoadingUsers: boolean;
     fetchUsers: () => Promise<void>;
+    saveUser: (uid: string | null, user: Partial<UserEntity> & { password?: string }) => Promise<void>;
     deleteUser: (uid: string) => Promise<void>;
 
     // Settings
@@ -83,6 +84,19 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             throw error;
         } finally {
             set({ isLoadingUsers: false });
+        }
+    },
+    saveUser: async (uid, user) => {
+        try {
+            if (uid) {
+                await adminRepository.updateUser(uid, user);
+            } else {
+                await adminRepository.addUser(user);
+            }
+            await get().fetchUsers();
+        } catch (error) {
+            console.error('Failed to save user:', error);
+            throw error;
         }
     },
     deleteUser: async (uid) => {

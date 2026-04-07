@@ -22,6 +22,14 @@ export class AdminRepository {
         return await apiClient.get<UserEntity[]>('/users');
     }
 
+    async addUser(user: Partial<UserEntity> & { password?: string }): Promise<void> {
+        return await apiClient.post('/users', user);
+    }
+
+    async updateUser(uid: string, user: Partial<UserEntity> & { password?: string }): Promise<void> {
+        return await apiClient.put(`/users/${uid}`, user);
+    }
+
     async deleteUser(uid: string): Promise<void> {
         return await apiClient.delete(`/users/${uid}`);
     }

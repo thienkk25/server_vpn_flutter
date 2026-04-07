@@ -41,6 +41,8 @@ router.put('/servers/:id', adminController.updateServer);
 router.delete('/servers/:id', adminController.deleteServer);
 
 router.get('/users', adminUserController.getAllUsers);
+router.post('/users', adminUserController.createUser);
+router.put('/users/:id', adminUserController.updateUser);
 router.delete('/users/:id', adminUserController.deleteUser);
 
 router.get('/settings', adminSettingsController.getSettings);
