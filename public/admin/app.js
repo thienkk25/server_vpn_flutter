@@ -92,13 +92,12 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-    const server = currentServers.find(s => s.id === id);
+    const server = currentServers.find(s => String(s.id) === String(id));
     if (!server) return;
     
     document.getElementById('serverId').value = server.id;
     document.getElementById('serverName').value = server.name || '';
     document.getElementById('serverHost').value = server.ip || '';
-    document.getElementById('serverPort').value = '';
     document.getElementById('serverProtocol').value = server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN';
     document.getElementById('serverStatus').value = server.status === 1 ? 'active' : 'offline';
     document.getElementById('serverPassword').value = server.password || '';
