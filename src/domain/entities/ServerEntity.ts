@@ -13,4 +13,5 @@ export interface ServerEntity {
   status: number;
   onWireGuard: number;
   wireGuardConfig?: string;
+  isVip?: number;
 }
