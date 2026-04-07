@@ -1,8 +1,8 @@
 export interface ServerEntity {
-  id: number;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number | null;
   name: string;
   region: string;
   ip: string;
