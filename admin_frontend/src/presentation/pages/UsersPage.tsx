@@ -23,7 +23,6 @@ export default function UsersPage() {
         const payload: Partial<UserEntity> & { password?: string } = {
             email: formData.get('email') as string,
             displayName: formData.get('displayName') as string,
-            isPremium: formData.get('isPremium') === 'on',
         };
         
         const password = formData.get('password') as string;
@@ -84,7 +83,7 @@ export default function UsersPage() {
                             <th>UID</th>
                             <th>Email</th>
                             <th>Display Name</th>
-                            <th>Premium Status</th>
+
                             <th>Joined At</th>
                             <th className="text-right">Actions</th>
                         </tr>
@@ -104,11 +103,7 @@ export default function UsersPage() {
                                     <td><small style={{ color: 'var(--text-muted)', fontFamily: 'monospace' }}>{user.uid}</small></td>
                                     <td><strong>{user.email}</strong></td>
                                     <td>{user.displayName}</td>
-                                    <td>
-                                        <span className={`status-badge ${user.isPremium ? 'active' : 'offline'}`}>
-                                            {user.isPremium ? 'PREMIUM' : 'FREE'}
-                                        </span>
-                                    </td>
+
                                     <td>{new Date(user.creationTime).toLocaleDateString()}</td>
                                     <td className="text-right">
                                         <button className="action-btn edit" onClick={() => openEdit(user)} style={{ marginRight: 8 }} disabled={deletingId === user.uid}>
@@ -151,10 +146,7 @@ export default function UsersPage() {
                                     <label>Password {editingUser && '(Leave blank to keep current)'}</label>
                                     <input type="password" name="password" className="glass-input" required={!editingUser} placeholder="Enter password" />
                                 </div>
-                                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input type="checkbox" name="isPremium" id="userIsPremium" defaultChecked={editingUser?.isPremium} style={{ width: 16, height: 16 }} />
-                                    <label htmlFor="userIsPremium" style={{ margin: 0, padding: 0 }}>Premium Subscription Active</label>
-                                </div>
+
                             </form>
                         </div>
                         <div className="modal-footer">
