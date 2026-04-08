@@ -7,6 +7,9 @@ export default function ServersPage() {
     const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, apiKey } = useAdminStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingServer, setEditingServer] = useState<Partial<ServerEntity> | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
         if (apiKey) fetchServers();
@@ -14,6 +17,8 @@ export default function ServersPage() {
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setErrorMsg(null);
+        setIsSaving(true);
         const formData = new FormData(e.currentTarget);
         const payload: Partial<ServerEntity> = {
             name: formData.get('name') as string,
@@ -27,24 +32,39 @@ export default function ServersPage() {
             username: 'vpn'
         };
 
-        await saveServer(editingServer?.id || null, payload);
-        setIsModalOpen(false);
+        try {
+            await saveServer(editingServer?.id || null, payload);
+            setIsModalOpen(false);
+        } catch (error: any) {
+            setErrorMsg(error.message || 'Failed to save server');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDelete = async (id: string | undefined) => {
         if (!id) return;
         if (window.confirm('Are you sure you want to delete this server?')) {
-            await deleteServer(id);
+            setDeletingId(id);
+            try {
+                await deleteServer(id);
+            } catch (error: any) {
+                alert(error.message || 'Failed to delete server');
+            } finally {
+                setDeletingId(null);
+            }
         }
     };
 
     const openEdit = (server: ServerEntity) => {
         setEditingServer(server);
+        setErrorMsg(null);
         setIsModalOpen(true);
     };
 
     const openCreate = () => {
         setEditingServer(null);
+        setErrorMsg(null);
         setIsModalOpen(true);
     };
 
@@ -103,12 +123,13 @@ export default function ServersPage() {
                                         </span>
                                     </td>
                                     <td className="text-right">
-                                        <button className="action-btn edit" onClick={() => openEdit(server)} style={{ marginRight: 8 }}>
+                                        <button className="action-btn edit" onClick={() => openEdit(server)} style={{ marginRight: 8 }} disabled={deletingId === server.id}>
                                             <Edit2 size={14} /> Edit
                                         </button>
-                                        <button className="action-btn delete" onClick={() => handleDelete(server.id)}>
-                                            <Trash2 size={14} /> Del
+                                        <button className="action-btn delete" onClick={() => handleDelete(server.id)} disabled={deletingId === server.id}>
+                                            <Trash2 size={14} /> {deletingId === server.id ? 'Deleting...' : 'Del'}
                                         </button>
+
                                     </td>
                                 </tr>
                             ))
@@ -125,6 +146,11 @@ export default function ServersPage() {
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
+                            {errorMsg && (
+                                <div style={{ padding: '10px', backgroundColor: 'rgba(255, 59, 48, 0.1)', color: '#ff3b30', border: '1px solid currentColor', borderRadius: '8px', marginBottom: '16px' }}>
+                                    {errorMsg}
+                                </div>
+                            )}
                             <form id="serverForm" onSubmit={handleSave}>
                                 <div className="form-group">
                                     <label>Server Name</label>
@@ -165,8 +191,10 @@ export default function ServersPage() {
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                            <button type="submit" form="serverForm" className="primary-btn glow-effect">Save Server</button>
+                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+                            <button type="submit" form="serverForm" className="primary-btn glow-effect" disabled={isSaving}>
+                                {isSaving ? 'Saving...' : 'Save Server'}
+                            </button>
                         </div>
                     </div>
                 </div>

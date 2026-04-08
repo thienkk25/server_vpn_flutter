@@ -7,6 +7,9 @@ export default function UsersPage() {
     const { users, isLoadingUsers, fetchUsers, deleteUser, saveUser, apiKey } = useAdminStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<Partial<UserEntity> | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
         if (apiKey) fetchUsers();
@@ -14,6 +17,8 @@ export default function UsersPage() {
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setErrorMsg(null);
+        setIsSaving(true);
         const formData = new FormData(e.currentTarget);
         const payload: Partial<UserEntity> & { password?: string } = {
             email: formData.get('email') as string,
@@ -26,23 +31,38 @@ export default function UsersPage() {
             payload.password = password;
         }
 
-        await saveUser(editingUser?.uid || null, payload);
-        setIsModalOpen(false);
+        try {
+            await saveUser(editingUser?.uid || null, payload);
+            setIsModalOpen(false);
+        } catch (error: any) {
+            setErrorMsg(error.message || 'Failed to save user');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDelete = async (uid: string) => {
         if (window.confirm('Are you sure you want to delete this user? It will remove them completely.')) {
-            await deleteUser(uid);
+            setDeletingId(uid);
+            try {
+                await deleteUser(uid);
+            } catch (error: any) {
+                alert(error.message || 'Failed to delete user');
+            } finally {
+                setDeletingId(null);
+            }
         }
     };
 
     const openEdit = (user: UserEntity) => {
         setEditingUser(user);
+        setErrorMsg(null);
         setIsModalOpen(true);
     };
 
     const openCreate = () => {
         setEditingUser(null);
+        setErrorMsg(null);
         setIsModalOpen(true);
     };
 
@@ -91,11 +111,11 @@ export default function UsersPage() {
                                     </td>
                                     <td>{new Date(user.creationTime).toLocaleDateString()}</td>
                                     <td className="text-right">
-                                        <button className="action-btn edit" onClick={() => openEdit(user)} style={{ marginRight: 8 }}>
+                                        <button className="action-btn edit" onClick={() => openEdit(user)} style={{ marginRight: 8 }} disabled={deletingId === user.uid}>
                                             <Edit2 size={14} /> Edit
                                         </button>
-                                        <button className="action-btn delete" onClick={() => handleDelete(user.uid)}>
-                                            <Trash2 size={14} /> Del
+                                        <button className="action-btn delete" onClick={() => handleDelete(user.uid)} disabled={deletingId === user.uid}>
+                                            <Trash2 size={14} /> {deletingId === user.uid ? 'Deleting...' : 'Del'}
                                         </button>
                                     </td>
                                 </tr>
@@ -113,6 +133,11 @@ export default function UsersPage() {
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
+                            {errorMsg && (
+                                <div style={{ padding: '10px', backgroundColor: 'rgba(255, 59, 48, 0.1)', color: '#ff3b30', border: '1px solid currentColor', borderRadius: '8px', marginBottom: '16px' }}>
+                                    {errorMsg}
+                                </div>
+                            )}
                             <form id="userForm" onSubmit={handleSave}>
                                 <div className="form-group">
                                     <label>Email</label>
@@ -133,8 +158,10 @@ export default function UsersPage() {
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                            <button type="submit" form="userForm" className="primary-btn glow-effect">{editingUser ? 'Save Changes' : 'Create User'}</button>
+                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+                            <button type="submit" form="userForm" className="primary-btn glow-effect" disabled={isSaving}>
+                                {isSaving ? 'Saving...' : (editingUser ? 'Save Changes' : 'Create User')}
+                            </button>
                         </div>
                     </div>
                 </div>
