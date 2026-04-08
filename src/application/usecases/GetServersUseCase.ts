@@ -15,8 +15,11 @@ export class GetServersUseCase {
 
     // Map to public info only
     return shuffled.map(server => {
-      const { config, username, password, wireGuardConfig, ...publicInfo } = server;
-      return publicInfo;
+      if (server.isVip === 1) {
+        const { config, username, password, wireGuardConfig, ...publicInfo } = server;
+        return publicInfo;
+      }
+      return server;
     });
   }
 }
