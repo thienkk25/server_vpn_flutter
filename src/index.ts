@@ -24,9 +24,9 @@ app.use('/api/servers', serverRoutes);
 app.use('/api/iap', iapRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Health Check
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).send('VPN Backend Server is running healthy');
+// 
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).send('VPN Backend Server is running');
 });
 
 // Start Background Jobs
@@ -34,6 +34,5 @@ startSubscriptionCronJob();
 
 // Start Server
 app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
-  console.log(`[server]: Check servers api at http://localhost:${port}/api/servers`);
+  console.log(`[server]: Server is running at ${port}`);
 });
