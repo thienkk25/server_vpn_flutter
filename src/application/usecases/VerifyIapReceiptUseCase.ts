@@ -38,13 +38,35 @@ export class VerifyIapReceiptUseCase {
       return emptySubscription;
     }
 
+    const VALID_PRODUCT_IDS = [
+      'premium_weekly_tt',
+      'premium_monthly_tt',
+      'premium_yearly_tt',
+      'premium_lifetime_test'
+    ];
+
     // 3. Get latest subscription
     let maxExpiration = 0;
     let latestProductId = '';
     let latestTransactionId = '';
 
     for (const item of receipts) {
-      const expiresAt = item.expires_date_ms ? parseInt(item.expires_date_ms, 10) : 0;
+      if (item.cancellation_date_ms) {
+        continue; // Skip refunded/cancelled purchases
+      }
+      if (!VALID_PRODUCT_IDS.includes(item.product_id)) {
+        continue; // Skip unrecognized products
+      }
+
+      let expiresAt = 0;
+      if (item.expires_date_ms) {
+        expiresAt = parseInt(item.expires_date_ms, 10);
+      } else if (item.purchase_date_ms) {
+        // Lifetime purchase (non-consumable) has no expiration date
+        // Use a far future date to represent lifetime access (Year 3000)
+        expiresAt = 32503680000000;
+      }
+
       if (expiresAt > maxExpiration) {
         maxExpiration = expiresAt;
         latestProductId = item.product_id;
@@ -54,14 +76,30 @@ export class VerifyIapReceiptUseCase {
 
     const isActive = maxExpiration > Date.now();
 
+    let autoRenewStatus = true;
+    let isInBillingRetry = false;
+
+    if (appleResponse.pending_renewal_info && latestProductId) {
+      const renewalInfo = appleResponse.pending_renewal_info.find(
+        (info) => info.product_id === latestProductId
+      );
+      if (renewalInfo) {
+        autoRenewStatus = renewalInfo.auto_renew_status === '1';
+        isInBillingRetry = renewalInfo.is_in_billing_retry_period === '1';
+      }
+    } else if (maxExpiration === 32503680000000) {
+      // Lifetime purchases don't auto-renew
+      autoRenewStatus = false;
+    }
+
     const subscriptionData: UserSubscriptionEntity = {
       userId,
       isActive,
       expiresAt: maxExpiration,
       productId: latestProductId,
       originalTransactionId: latestTransactionId,
-      autoRenewStatus: true,
-      isInBillingRetry: false,
+      autoRenewStatus,
+      isInBillingRetry,
       environment: appleResponse.environment
     };
 

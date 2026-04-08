@@ -9,6 +9,7 @@ export interface AppleReceiptResponse {
       original_transaction_id: string;
       purchase_date_ms: string;
       expires_date_ms?: string;
+      cancellation_date_ms?: string;
     }>;
   };
   latest_receipt_info?: Array<{
@@ -17,6 +18,13 @@ export interface AppleReceiptResponse {
     original_transaction_id: string;
     purchase_date_ms: string;
     expires_date_ms?: string;
+    cancellation_date_ms?: string;
+  }>;
+  pending_renewal_info?: Array<{
+    auto_renew_status: string;
+    product_id: string;
+    expiration_intent?: string;
+    is_in_billing_retry_period?: string;
   }>;
 }
 
@@ -45,18 +53,31 @@ export class AppleIapService {
   }
 
   private async callAppleApi(url: string, payload: any): Promise<AppleReceiptResponse> {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
 
-    if (!response.ok) {
-      throw new Error(`Failed to verify receipt with Apple: ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal as RequestInit['signal'],
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to verify receipt with Apple: ${response.statusText}`);
+      }
+
+      return (await response.json()) as AppleReceiptResponse;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error(`Apple verification timeout on ${url}`);
+      }
+      throw error;
     }
-
-    return (await response.json()) as AppleReceiptResponse;
   }
 }
