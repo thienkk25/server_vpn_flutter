@@ -18,8 +18,34 @@ export class SubscriptionFirebaseRepository implements ISubscriptionRepository {
   }
 
   async saveSubscription(subscription: UserSubscriptionEntity): Promise<void> {
-    if (!this.collection) throw new Error("Firebase DB not initialized");
-    await this.collection.doc(subscription.userId).set(subscription, { merge: true });
+    if (!this.collection || !db) throw new Error("Firebase DB not initialized");
+    
+    const batch = db.batch();
+
+    // If the subscription is premium and tied to an Apple ID, automatically revoke 
+    // it from any other user who used this exact same transaction ID before.
+    if (subscription.originalTransactionId && subscription.isPremium) {
+      const existingDocs = await this.collection
+        .where('originalTransactionId', '==', subscription.originalTransactionId)
+        .where('isPremium', '==', true)
+        .get();
+
+      existingDocs.forEach((doc) => {
+        if (doc.id !== subscription.userId) {
+          batch.update(doc.ref, { 
+            isPremium: false,
+            revokedAt: Date.now(),
+            revokedReason: 'transferred_to_another_account' 
+          });
+        }
+      });
+    }
+
+    // Save/update the subscription for the current user
+    const userRef = this.collection.doc(subscription.userId);
+    batch.set(userRef, subscription, { merge: true });
+
+    await batch.commit();
   }
 
   async revokeSubscriptionsOlderThan(timestamp: number): Promise<void> {

@@ -20,7 +20,15 @@ export class VerifyIapReceiptUseCase {
     const receipts = appleResponse.latest_receipt_info || appleResponse.receipt?.in_app || [];
     
     if (receipts.length === 0) {
-      throw new Error('No in-app purchase history found in the receipt.');
+      const emptySubscription: UserSubscriptionEntity = {
+        userId,
+        isPremium: false,
+        expiredAt: 0,
+        productId: '',
+        originalTransactionId: '',
+      };
+      await this.subscriptionRepository.saveSubscription(emptySubscription);
+      return emptySubscription;
     }
 
     // We assume the receipts are sorted or we find the maximum expires_date_ms
