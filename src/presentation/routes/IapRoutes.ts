@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { IapController } from '../controllers/IapController';
+import { IapWebhookController } from '../controllers/IapWebhookController';
 import { VerifyIapReceiptUseCase } from '../../application/usecases/VerifyIapReceiptUseCase';
 import { AppleIapService } from '../../infrastructure/services/AppleIapService';
 import { SubscriptionFirebaseRepository } from '../../infrastructure/repositories/SubscriptionFirebaseRepository';
@@ -13,9 +14,11 @@ const subscriptionRepository = new SubscriptionFirebaseRepository();
 const verifyIapReceiptUseCase = new VerifyIapReceiptUseCase(appleIapService, subscriptionRepository);
 
 const iapController = new IapController(verifyIapReceiptUseCase);
+const iapWebhookController = new IapWebhookController();
 
 // Routes
 router.post('/verify', authMiddleware, iapController.verifyReceipt);
 router.post('/restore', authMiddleware, iapController.restorePurchase);
+router.post('/webhook', iapWebhookController.handleWebhook);
 
 export default router;

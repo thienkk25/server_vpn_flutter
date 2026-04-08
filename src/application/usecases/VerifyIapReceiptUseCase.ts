@@ -15,15 +15,22 @@ export class VerifyIapReceiptUseCase {
       throw new Error(`Invalid receipt. Apple status code: ${appleResponse.status}`);
     }
 
-    // Extract the latest expiration date from the receipt
-    // Usually found in latest_receipt_info for subscriptions
-    const receipts = appleResponse.latest_receipt_info || appleResponse.receipt?.in_app || [];
-    
+    const receipt = appleResponse.receipt;
+    if (!receipt) {
+      throw new Error('Receipt empty');
+    }
+
+    // 2. Validate bundle_id
+    if (receipt.bundle_id !== process.env.APP_BUNDLE_ID) {
+      throw new Error(`Bundle mismatch: ${receipt.bundle_id}`);
+    }
+
+    const receipts = appleResponse.latest_receipt_info || receipt.in_app || [];
     if (receipts.length === 0) {
       const emptySubscription: UserSubscriptionEntity = {
         userId,
-        isPremium: false,
-        expiredAt: 0,
+        isActive: false,
+        expiresAt: 0,
         productId: '',
         originalTransactionId: '',
       };
@@ -31,7 +38,7 @@ export class VerifyIapReceiptUseCase {
       return emptySubscription;
     }
 
-    // We assume the receipts are sorted or we find the maximum expires_date_ms
+    // 3. Get latest subscription
     let maxExpiration = 0;
     let latestProductId = '';
     let latestTransactionId = '';
@@ -45,16 +52,20 @@ export class VerifyIapReceiptUseCase {
       }
     }
 
-    const isPremium = maxExpiration > Date.now();
+    const isActive = maxExpiration > Date.now();
 
     const subscriptionData: UserSubscriptionEntity = {
       userId,
-      isPremium,
-      expiredAt: maxExpiration,
+      isActive,
+      expiresAt: maxExpiration,
       productId: latestProductId,
       originalTransactionId: latestTransactionId,
+      autoRenewStatus: true,
+      isInBillingRetry: false,
+      environment: appleResponse.environment
     };
 
+    // 5 & 6. save subscription and update user are handled inside saveSubscription
     await this.subscriptionRepository.saveSubscription(subscriptionData);
 
     return subscriptionData;
