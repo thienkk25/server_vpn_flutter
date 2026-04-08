@@ -11,7 +11,7 @@ export class GetPrivateServerConfigUseCase {
     const subscription = await this.subscriptionRepository.getSubscriptionByUserId(userId);
     const now = Date.now();
 
-    if (!subscription || !subscription.isPremium) {
+    if (!subscription || !subscription.isActive) {
       throw new Error('403: Forbidden - Premium subscription required.');
     }
 
