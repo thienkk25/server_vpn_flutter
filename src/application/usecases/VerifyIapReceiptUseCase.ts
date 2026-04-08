@@ -8,34 +8,13 @@ export class VerifyIapReceiptUseCase {
     private subscriptionRepository: ISubscriptionRepository
   ) {}
 
-  async execute(userId: string, receiptData: string): Promise<UserSubscriptionEntity> {
-    const appleResponse = await this.appleIapService.verifyReceipt(receiptData);
-
-    if (appleResponse.status !== 0) {
-      throw new Error(`Invalid receipt. Apple status code: ${appleResponse.status}`);
-    }
-
-    const receipt = appleResponse.receipt;
-    if (!receipt) {
-      throw new Error('Receipt empty');
-    }
+  async execute(userId: string, jwsRepresentation: string): Promise<UserSubscriptionEntity> {
+    // 1. Verify and decode the StoreKit 2 JWS token using Apple's Embedded Public Key
+    const transaction = await this.appleIapService.verifyJwsTransaction(jwsRepresentation);
 
     // 2. Validate bundle_id
-    if (receipt.bundle_id !== process.env.APP_BUNDLE_ID) {
-      throw new Error(`Bundle mismatch: ${receipt.bundle_id}`);
-    }
-
-    const receipts = appleResponse.latest_receipt_info || receipt.in_app || [];
-    if (receipts.length === 0) {
-      const emptySubscription: UserSubscriptionEntity = {
-        userId,
-        isActive: false,
-        expiresAt: 0,
-        productId: '',
-        originalTransactionId: '',
-      };
-      await this.subscriptionRepository.saveSubscription(emptySubscription);
-      return emptySubscription;
+    if (transaction.bundleId !== process.env.APP_BUNDLE_ID) {
+      throw new Error(`Bundle mismatch: ${transaction.bundleId}`);
     }
 
     const VALID_PRODUCT_IDS = [
@@ -45,65 +24,45 @@ export class VerifyIapReceiptUseCase {
       'premium_lifetime_test'
     ];
 
-    // 3. Get latest subscription
-    let maxExpiration = 0;
-    let latestProductId = '';
-    let latestTransactionId = '';
-
-    for (const item of receipts) {
-      if (item.cancellation_date_ms) {
-        continue; // Skip refunded/cancelled purchases
-      }
-      if (!VALID_PRODUCT_IDS.includes(item.product_id)) {
-        continue; // Skip unrecognized products
-      }
-
-      let expiresAt = 0;
-      if (item.expires_date_ms) {
-        expiresAt = parseInt(item.expires_date_ms, 10);
-      } else if (item.purchase_date_ms) {
-        // Lifetime purchase (non-consumable) has no expiration date
-        // Use a far future date to represent lifetime access (Year 3000)
-        expiresAt = 32503680000000;
-      }
-
-      if (expiresAt > maxExpiration) {
-        maxExpiration = expiresAt;
-        latestProductId = item.product_id;
-        latestTransactionId = item.original_transaction_id;
-      }
+    if (!VALID_PRODUCT_IDS.includes(transaction.productId)) {
+       throw new Error(`Invalid product ID: ${transaction.productId}`);
     }
 
-    const isActive = maxExpiration > Date.now();
-
-    let autoRenewStatus = true;
-    let isInBillingRetry = false;
-
-    if (appleResponse.pending_renewal_info && latestProductId) {
-      const renewalInfo = appleResponse.pending_renewal_info.find(
-        (info) => info.product_id === latestProductId
-      );
-      if (renewalInfo) {
-        autoRenewStatus = renewalInfo.auto_renew_status === '1';
-        isInBillingRetry = renewalInfo.is_in_billing_retry_period === '1';
-      }
-    } else if (maxExpiration === 32503680000000) {
-      // Lifetime purchases don't auto-renew
-      autoRenewStatus = false;
+    // 3. Determine expiration date
+    let expiresAt = 0;
+    if (transaction.expiresDate) {
+      expiresAt = transaction.expiresDate;
+    } else if (transaction.purchaseDate) {
+      // Lifetime purchase (non-consumable) has no expiration date
+      // Use a far future date to represent lifetime access (Year 3000)
+      expiresAt = 32503680000000;
     }
+
+    // 4. Check if refunded/revoked
+    if (transaction.revocationDate) {
+      expiresAt = 0;
+    }
+
+    // 5. Evaluate active status
+    const isActive = expiresAt > Date.now();
+
+    // In StoreKit 2, you typically get the latest info. 
+    // Auto-renew status may need to be checked via Apple Server API or Notifications V2, 
+    // but initially we assume it's active if it's a subscription.
+    let autoRenewStatus = isActive && expiresAt !== 32503680000000;
 
     const subscriptionData: UserSubscriptionEntity = {
       userId,
       isActive,
-      expiresAt: maxExpiration,
-      productId: latestProductId,
-      originalTransactionId: latestTransactionId,
+      expiresAt,
+      productId: transaction.productId,
+      originalTransactionId: transaction.originalTransactionId,
       autoRenewStatus,
-      isInBillingRetry,
-      environment: appleResponse.environment
+      isInBillingRetry: false,
+      environment: transaction.environment || 'Production' // JWS includes environment
     };
 
-    // 5 & 6. save subscription and update user are handled inside saveSubscription
+    // 6. save subscription and update user are handled inside saveSubscription
     await this.subscriptionRepository.saveSubscription(subscriptionData);
 
     return subscriptionData;

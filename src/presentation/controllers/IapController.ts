@@ -8,19 +8,20 @@ export class IapController {
   public verifyReceipt = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user?.uid;
-      const { receiptData } = req.body;
+      const { jwsRepresentation, receiptData } = req.body;
+      const payloadString = jwsRepresentation || receiptData;
 
       if (!userId) {
         res.status(401).json({ success: false, message: 'Unauthorized' });
         return;
       }
 
-      if (!receiptData) {
-        res.status(400).json({ success: false, message: 'Receipt data is required' });
+      if (!payloadString) {
+        res.status(400).json({ success: false, message: 'JWS representation (or receipt data) is required' });
         return;
       }
 
-      const subscription = await this.verifyIapReceiptUseCase.execute(userId, receiptData);
+      const subscription = await this.verifyIapReceiptUseCase.execute(userId, payloadString);
 
       res.status(200).json({
         success: true,
