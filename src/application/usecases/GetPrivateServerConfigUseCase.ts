@@ -11,8 +11,8 @@ export class GetPrivateServerConfigUseCase {
     const subscription = await this.subscriptionRepository.getSubscriptionByUserId(userId);
     const now = Date.now();
 
-    if (!subscription || !subscription.isPremium || subscription.expiredAt < now) {
-      throw new Error('403: Forbidden - Premium subscription required or expired.');
+    if (!subscription || !subscription.isPremium) {
+      throw new Error('403: Forbidden - Premium subscription required.');
     }
 
     // Since our DB uses string IDs but the mock may be something else, let's just get all and find. 
