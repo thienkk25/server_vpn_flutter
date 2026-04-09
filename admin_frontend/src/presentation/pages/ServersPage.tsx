@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
 import { Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
 import type { ServerEntity } from '../../domain/entities/admin';
 
 export default function ServersPage() {
-    const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, apiKey } = useAdminStore();
+    const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, importServers, apiKey } = useAdminStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingServer, setEditingServer] = useState<Partial<ServerEntity> | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -14,6 +14,59 @@ export default function ServersPage() {
     useEffect(() => {
         if (apiKey) fetchServers();
     }, [apiKey, fetchServers]);
+
+    const jsonFileInputRef = useRef<HTMLInputElement>(null);
+    const configFileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (!Array.isArray(data)) throw new Error('Data should be an array of servers.');
+            
+            if (window.confirm(`Found ${data.length} servers in file. Proceed to import?`)) {
+                await importServers(data);
+                alert('Import successful!');
+            }
+        } catch (error: any) {
+            alert('Failed to parse or import JSON: ' + error.message);
+        } finally {
+            if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+        }
+    };
+
+    const handleUploadConfig = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const form = document.getElementById('serverForm') as HTMLFormElement | null;
+            if (form) {
+                form.config.value = text;
+                
+                // Parse IP
+                const remoteMatch = text.match(/remote\s+([a-zA-Z0-9.-]+)/i);
+                if (remoteMatch && remoteMatch[1]) {
+                    form.ip.value = remoteMatch[1];
+                }
+
+                // Determine protocol
+                if (file.name.toLowerCase().endsWith('.conf')) {
+                    form.protocol.value = 'WireGuard';
+                } else if (file.name.toLowerCase().endsWith('.ovpn')) {
+                    form.protocol.value = 'OpenVPN';
+                }
+            }
+        } catch (error: any) {
+            alert('Failed to read config file: ' + error.message);
+        } finally {
+            if (configFileInputRef.current) configFileInputRef.current.value = '';
+        }
+    };
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -26,10 +79,10 @@ export default function ServersPage() {
             status: formData.get('status') === 'active' ? 1 : 0,
             onWireGuard: formData.get('protocol') === 'WireGuard' ? 1 : 0,
             isVip: formData.get('isVip') ? 1 : 0,
-            password: formData.get('password') as string,
-            config: formData.get('config') as string,
-            version: 3,
-            username: 'vpn'
+            password: formData.get('password') as string || '',
+            config: formData.get('config') as string || '',
+            version: parseInt(formData.get('version') as string, 10) || 1,
+            username: formData.get('username') as string || ''
         };
 
         try {
@@ -71,6 +124,10 @@ export default function ServersPage() {
     return (
         <div className="section content-section">
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '20px' }}>
+                <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
+                <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
+                    Import JSON
+                </button>
                 <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
                     <RefreshCw size={16} /> Refresh
                 </button>
@@ -112,8 +169,8 @@ export default function ServersPage() {
                                         </span>
                                     </td>
                                     <td>
-                                        <span 
-                                            className={`status-badge ${server.isVip === 1 ? 'active' : 'offline'}`} 
+                                        <span
+                                            className={`status-badge ${server.isVip === 1 ? 'active' : 'offline'}`}
                                             style={{
                                                 backgroundColor: server.isVip === 1 ? '#ffb020' : 'var(--glass-bg-accent)',
                                                 color: server.isVip === 1 ? '#000' : 'var(--text-light)'
@@ -180,13 +237,29 @@ export default function ServersPage() {
                                     <input type="checkbox" name="isVip" id="serverIsVip" defaultChecked={editingServer?.isVip === 1} style={{ width: 16, height: 16 }} />
                                     <label htmlFor="serverIsVip" style={{ margin: 0, padding: 0 }}>Require VIP Subscription</label>
                                 </div>
-                                <div className="form-group">
-                                    <label>Password (Optional)</label>
-                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password} placeholder="Leave empty if none" />
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Username</label>
+                                        <input type="text" name="username" className="glass-input" defaultValue={editingServer?.username || ''} placeholder="e.g. vpn" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Version</label>
+                                        <input type="number" name="version" className="glass-input" defaultValue={editingServer?.version || 1} placeholder="e.g. 1" min="1" />
+                                    </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Raw Config</label>
-                                    <textarea name="config" className="glass-input" rows={5} defaultValue={editingServer?.config} placeholder="Paste OpenVPN or other config here..."></textarea>
+                                    <label>Password (Optional)</label>
+                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder="Leave empty if none" />
+                                </div>
+                                <div className="form-group">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                        <label style={{ margin: 0 }}>Raw Config</label>
+                                        <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
+                                        <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
+                                            Upload File
+                                        </button>
+                                    </div>
+                                    <textarea name="config" className="glass-input" rows={5} defaultValue={editingServer?.config || ''} placeholder="Paste OpenVPN or other config here..."></textarea>
                                 </div>
                             </form>
                         </div>

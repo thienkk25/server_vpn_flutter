@@ -3,7 +3,8 @@ import {
   GetAllServersAdminUseCase, 
   CreateServerUseCase, 
   UpdateServerUseCase, 
-  DeleteServerUseCase 
+  DeleteServerUseCase,
+  ImportServersUseCase
 } from '../../application/usecases/AdminServerUseCases';
 import { ServerEntity } from '../../domain/entities/ServerEntity';
 import crypto from 'crypto';
@@ -13,7 +14,8 @@ export class AdminServerController {
     private getAllUseCase: GetAllServersAdminUseCase,
     private createUseCase: CreateServerUseCase,
     private updateUseCase: UpdateServerUseCase,
-    private deleteUseCase: DeleteServerUseCase
+    private deleteUseCase: DeleteServerUseCase,
+    private importUseCase: ImportServersUseCase
   ) {}
 
   public getAllServers = async (req: Request, res: Response): Promise<void> => {
@@ -54,6 +56,20 @@ export class AdminServerController {
       const id = req.params.id as string;
       await this.deleteUseCase.execute(id);
       res.status(200).json({ success: true, message: 'Server deleted successfully' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  public importServers = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const serversData: Partial<ServerEntity>[] = req.body;
+      if (!Array.isArray(serversData)) {
+        res.status(400).json({ success: false, message: 'Invalid data format. Expected an array of servers.' });
+        return;
+      }
+      await this.importUseCase.execute(serversData);
+      res.status(201).json({ success: true, message: `Successfully imported ${serversData.length} servers` });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

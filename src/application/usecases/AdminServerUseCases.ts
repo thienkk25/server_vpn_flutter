@@ -1,5 +1,6 @@
 import { IServerRepository } from '../../domain/repositories/IServerRepository';
 import { ServerEntity } from '../../domain/entities/ServerEntity';
+import crypto from 'crypto';
 
 export class GetAllServersAdminUseCase {
   constructor(private serverRepository: IServerRepository) {}
@@ -31,5 +32,20 @@ export class DeleteServerUseCase {
   constructor(private serverRepository: IServerRepository) {}
   async execute(id: string): Promise<void> {
     await this.serverRepository.deleteServer(id);
+  }
+}
+
+export class ImportServersUseCase {
+  constructor(private serverRepository: IServerRepository) {}
+  async execute(serversData: Partial<ServerEntity>[]): Promise<void> {
+    const newServers = serversData.map(server => ({
+      ...server,
+      id: server.id || crypto.randomUUID(),
+      createdAt: server.createdAt || Date.now(),
+      updatedAt: server.updatedAt || Date.now()
+    })) as ServerEntity[];
+    
+    // We reuse seedData as it uses firestore batch to set documents
+    await this.serverRepository.seedData(newServers);
   }
 }

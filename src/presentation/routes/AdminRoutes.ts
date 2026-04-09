@@ -5,7 +5,8 @@ import {
   GetAllServersAdminUseCase, 
   CreateServerUseCase, 
   UpdateServerUseCase, 
-  DeleteServerUseCase 
+  DeleteServerUseCase,
+  ImportServersUseCase
 } from '../../application/usecases/AdminServerUseCases';
 import { ServerFirebaseRepository } from '../../infrastructure/repositories/ServerFirebaseRepository';
 import { AdminUserUseCases } from '../../application/usecases/AdminUserUseCases';
@@ -21,9 +22,10 @@ const getAllUseCase = new GetAllServersAdminUseCase(repository);
 const createUseCase = new CreateServerUseCase(repository);
 const updateUseCase = new UpdateServerUseCase(repository);
 const deleteUseCase = new DeleteServerUseCase(repository);
+const importUseCase = new ImportServersUseCase(repository);
 
 const adminController = new AdminServerController(
-  getAllUseCase, createUseCase, updateUseCase, deleteUseCase
+  getAllUseCase, createUseCase, updateUseCase, deleteUseCase, importUseCase
 );
 
 const userUseCases = new AdminUserUseCases();
@@ -37,6 +39,7 @@ router.use(adminMiddleware);
 
 router.get('/servers', adminController.getAllServers);
 router.post('/servers', adminController.createServer);
+router.post('/servers/import', adminController.importServers);
 router.put('/servers/:id', adminController.updateServer);
 router.delete('/servers/:id', adminController.deleteServer);
 

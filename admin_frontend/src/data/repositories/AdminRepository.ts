@@ -10,6 +10,10 @@ export class AdminRepository {
         return await apiClient.post('/servers', server);
     }
 
+    async importServers(servers: Partial<ServerEntity>[]): Promise<void> {
+        return await apiClient.post('/servers/import', servers);
+    }
+
     async updateServer(id: string, server: Partial<ServerEntity>): Promise<void> {
         return await apiClient.put(`/servers/${id}`, server);
     }

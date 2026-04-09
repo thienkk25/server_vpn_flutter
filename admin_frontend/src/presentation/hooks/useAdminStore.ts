@@ -13,6 +13,7 @@ interface AdminState {
     fetchServers: () => Promise<void>;
     saveServer: (id: string | null, server: Partial<ServerEntity>) => Promise<void>;
     deleteServer: (id: string) => Promise<void>;
+    importServers: (servers: Partial<ServerEntity>[]) => Promise<void>;
 
     // Users
     users: UserEntity[];
@@ -68,6 +69,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             await get().fetchServers();
         } catch (error) {
             console.error('Failed to delete server:', error);
+            throw error;
+        }
+    },
+    importServers: async (servers) => {
+        try {
+            await adminRepository.importServers(servers);
+            await get().fetchServers();
+        } catch (error) {
+            console.error('Failed to import servers:', error);
             throw error;
         }
     },
