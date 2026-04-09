@@ -32,6 +32,45 @@ export default function ServersPage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+    const toggleSelectAll = () => {
+        if (servers.length === 0) return;
+        if (selectedIds.length === servers.length) {
+            setSelectedIds([]);
+        } else {
+            const validIds = servers.map(s => s.id).filter(Boolean) as string[];
+            setSelectedIds(validIds);
+        }
+    };
+
+    const toggleSelect = (id: string | undefined) => {
+        if (!id) return;
+        if (selectedIds.includes(id)) {
+            setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+        } else {
+            setSelectedIds(prev => [...prev, id]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (window.confirm(`Are you sure you want to delete ${selectedIds.length} server(s)?`)) {
+            setIsDeletingBulk(true);
+            try {
+                for (const id of selectedIds) {
+                    await deleteServer(id);
+                }
+                setSelectedIds([]);
+            } catch (error: any) {
+                alert(error.message || 'Failed to delete some servers');
+            } finally {
+                setIsDeletingBulk(false);
+            }
+        }
+    };
+
     useEffect(() => {
         if (apiKey) fetchServers();
     }, [apiKey, fetchServers]);
@@ -151,23 +190,40 @@ export default function ServersPage() {
 
     return (
         <div className="section content-section">
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '20px' }}>
-                <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
-                <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
-                    Import JSON
-                </button>
-                <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
-                    <RefreshCw size={16} /> Refresh
-                </button>
-                <button className="primary-btn glow-effect" onClick={openCreate}>
-                    <Plus size={16} /> New Server
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {selectedIds.length > 0 && (
+                        <button className="action-btn delete" onClick={handleBulkDelete} disabled={isDeletingBulk || isLoadingServers} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', borderRadius: '8px', border: '1px solid currentColor' }}>
+                            <Trash2 size={16} /> {isDeletingBulk ? 'Deleting...' : `Delete Selected (${selectedIds.length})`}
+                        </button>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
+                    <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
+                        Import JSON
+                    </button>
+                    <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
+                        <RefreshCw size={16} /> Refresh
+                    </button>
+                    <button className="primary-btn glow-effect" onClick={openCreate}>
+                        <Plus size={16} /> New Server
+                    </button>
+                </div>
             </div>
 
             <div className="table-container glass-panel">
                 <table className="data-table">
                     <thead>
                         <tr>
+                            <th style={{ width: '40px', textAlign: 'center' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={servers.length > 0 && selectedIds.length === servers.length}
+                                    onChange={toggleSelectAll} 
+                                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
+                                />
+                            </th>
                             <th>Name</th>
                             <th>Host / IP</th>
                             <th>Protocol</th>
@@ -179,15 +235,23 @@ export default function ServersPage() {
                     <tbody>
                         {isLoadingServers ? (
                             <tr>
-                                <td colSpan={6} className="text-center loading-text">Loading servers...</td>
+                                <td colSpan={7} className="text-center loading-text">Loading servers...</td>
                             </tr>
                         ) : servers.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="text-center text-muted">No servers found. Add one to get started.</td>
+                                <td colSpan={7} className="text-center text-muted">No servers found. Add one to get started.</td>
                             </tr>
                         ) : (
                             servers.map(server => (
-                                <tr key={server.id}>
+                                <tr key={server.id} style={{ backgroundColor: selectedIds.includes(server.id!) ? 'rgba(74, 158, 255, 0.05)' : 'inherit' }}>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={selectedIds.includes(server.id!)}
+                                            onChange={() => toggleSelect(server.id)} 
+                                            style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
+                                        />
+                                    </td>
                                     <td><strong>{server.name}</strong></td>
                                     <td>{server.ip || '-'}</td>
                                     <td>{server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}</td>
