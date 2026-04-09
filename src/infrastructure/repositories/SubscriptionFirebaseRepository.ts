@@ -52,7 +52,8 @@ export class SubscriptionFirebaseRepository implements ISubscriptionRepository {
            // Revoke the old user's premium status in users collection
            const oldUserRef = this.users.doc(oldUserId);
            batch.update(oldUserRef, {
-             isPremium: false
+             isPremium: false,
+             activeProductId: null
            });
         }
       }
@@ -66,6 +67,7 @@ export class SubscriptionFirebaseRepository implements ISubscriptionRepository {
       batch.set(userRef, {
         isPremium: subscription.isActive,
         subscriptionId: subscription.originalTransactionId,
+        activeProductId: subscription.productId, // Added so flutter can read which plan is active
         platform: 'ios'
       }, { merge: true });
     }
@@ -88,7 +90,7 @@ export class SubscriptionFirebaseRepository implements ISubscriptionRepository {
       const userId = doc.data().userId;
       if (userId) {
         const userRef = this.users.doc(userId);
-        batch.update(userRef, { isPremium: false });
+        batch.update(userRef, { isPremium: false, activeProductId: null });
       }
     }
 
