@@ -15,11 +15,13 @@ export default function SettingsPage() {
         const formData = new FormData(e.currentTarget);
         
         try {
+            const parsedSeconds = parseInt(formData.get('flashSaleTimerSeconds') as string, 10);
             await updateSettings({
                 maintenanceMode: formData.get('maintenanceMode') === 'on',
                 privacyPolicyUrl: formData.get('privacyPolicyUrl') as string,
                 termsOfServiceUrl: formData.get('termsOfServiceUrl') as string,
-                systemMessage: formData.get('systemMessage') as string
+                systemMessage: formData.get('systemMessage') as string,
+                flashSaleTimerSeconds: isNaN(parsedSeconds) ? 7200 : parsedSeconds
             });
             alert('Settings saved successfully!');
         } catch (error) {
@@ -82,6 +84,19 @@ export default function SettingsPage() {
                             defaultValue={settings?.systemMessage} 
                             placeholder="Leave empty for no announcement" 
                         />
+                    </div>
+                    <div className="form-group">
+                        <label>Flash Sale Countdown (Seconds)</label>
+                        <input 
+                            type="number" 
+                            name="flashSaleTimerSeconds" 
+                            className="glass-input" 
+                            defaultValue={settings?.flashSaleTimerSeconds ?? 7200} 
+                            placeholder="e.g. 7200 for 2 hours (0 to disable)" 
+                        />
+                        <p className="text-muted" style={{ marginTop: '5px', fontSize: '0.9em' }}>
+                            Duration of the fake flash sale countdown in the app (e.g., 7200 = 2 hours, 0 = disable sale).
+                        </p>
                     </div>
                     <div className="form-group text-right" style={{ marginTop: '20px' }}>
                         <button type="submit" disabled={isSaving} className="primary-btn glow-effect">
