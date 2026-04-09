@@ -46,7 +46,10 @@ export default function ServersPage() {
             const text = await file.text();
             const form = document.getElementById('serverForm') as HTMLFormElement | null;
             if (form) {
-                form.config.value = text;
+                // Base64 encode the uploaded file (modern Unicode-safe)
+                const bytes = new TextEncoder().encode(text);
+                const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+                form.config.value = btoa(binString);
                 
                 // Parse IP
                 const remoteMatch = text.match(/remote\s+([a-zA-Z0-9.-]+)/i);
