@@ -28,6 +28,7 @@ export default function ServersPage() {
     };
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingServer, setEditingServer] = useState<Partial<ServerEntity> | null>(null);
+    const [selectedProtocol, setSelectedProtocol] = useState<string>('OpenVPN');
     const [isSaving, setIsSaving] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,22 +105,33 @@ export default function ServersPage() {
 
         try {
             const text = await file.text();
-            const form = document.getElementById('serverForm') as HTMLFormElement | null;
+            const form = document.getElementById('serverForm') as any;
             if (form) {
-                // Show raw text in textarea for editing
-                form.config.value = text;
-                
                 // Parse IP
                 const remoteMatch = text.match(/remote\s+([a-zA-Z0-9.-]+)/i);
-                if (remoteMatch && remoteMatch[1]) {
+                if (remoteMatch && remoteMatch[1] && form.ip) {
                     form.ip.value = remoteMatch[1];
                 }
 
                 // Determine protocol
-                if (file.name.toLowerCase().endsWith('.conf')) {
-                    form.protocol.value = 'WireGuard';
-                } else if (file.name.toLowerCase().endsWith('.ovpn')) {
-                    form.protocol.value = 'OpenVPN';
+                const extStr = file.name.toLowerCase();
+                const isWgFile = extStr.endsWith('.conf') || text.includes('[Interface]');
+                
+                if (selectedProtocol === 'Both') {
+                    if (isWgFile) {
+                         if (form.config_wireguard) form.config_wireguard.value = text;
+                    } else {
+                         if (form.config_openvpn) form.config_openvpn.value = text;
+                    }
+                } else {
+                    if (form.config) {
+                         form.config.value = text;
+                    }
+                    if (isWgFile) {
+                        setSelectedProtocol('WireGuard');
+                    } else if (extStr.endsWith('.ovpn') || text.includes('client')) {
+                        setSelectedProtocol('OpenVPN');
+                    }
                 }
             }
         } catch (error: any) {
@@ -135,19 +147,29 @@ export default function ServersPage() {
         setIsSaving(true);
         const formData = new FormData(e.currentTarget);
         const protocol = formData.get('protocol') as string;
-        const configText = formData.get('config') as string || '';
-        const safeConfig = ensureBase64(configText);
+        
+        let safeConfigOpenVPN = '';
+        let safeConfigWireGuard = '';
+
+        if (protocol === 'Both') {
+            safeConfigOpenVPN = ensureBase64(formData.get('config_openvpn') as string || '');
+            safeConfigWireGuard = ensureBase64(formData.get('config_wireguard') as string || '');
+        } else if (protocol === 'WireGuard') {
+            safeConfigWireGuard = ensureBase64(formData.get('config') as string || '');
+        } else {
+            safeConfigOpenVPN = ensureBase64(formData.get('config') as string || '');
+        }
 
         const payload: Partial<ServerEntity> = {
             name: formData.get('name') as string,
             region: formData.get('region') as string || '',
             ip: formData.get('ip') as string,
             status: formData.get('status') === 'active' ? 1 : 0,
-            onWireGuard: protocol === 'WireGuard' ? 1 : 0,
+            onWireGuard: (protocol === 'WireGuard' || protocol === 'Both') ? 1 : 0,
             isVip: formData.get('isVip') ? 1 : 0,
             password: formData.get('password') as string || '',
-            config: protocol === 'OpenVPN' ? safeConfig : '',
-            wireGuardConfig: protocol === 'WireGuard' ? safeConfig : '',
+            config: safeConfigOpenVPN,
+            wireGuardConfig: safeConfigWireGuard,
             version: parseInt(formData.get('version') as string, 10) || 1,
             username: formData.get('username') as string || ''
         };
@@ -179,12 +201,22 @@ export default function ServersPage() {
     const openEdit = (server: ServerEntity) => {
         setEditingServer(server);
         setErrorMsg(null);
+        
+        let proto = 'OpenVPN';
+        if (server.onWireGuard === 1 && server.config && server.config.trim() !== '') {
+            proto = 'Both';
+        } else if (server.onWireGuard === 1) {
+            proto = 'WireGuard';
+        }
+        setSelectedProtocol(proto);
+        
         setIsModalOpen(true);
     };
 
     const openCreate = () => {
         setEditingServer(null);
         setErrorMsg(null);
+        setSelectedProtocol('OpenVPN');
         setIsModalOpen(true);
     };
 
@@ -254,7 +286,11 @@ export default function ServersPage() {
                                     </td>
                                     <td><strong>{server.name}</strong></td>
                                     <td>{server.ip || '-'}</td>
-                                    <td>{server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}</td>
+                                    <td>
+                                        {(server.onWireGuard === 1 && server.config && server.config.trim() !== '')
+                                            ? 'Both (OpenVPN & WireGuard)'
+                                            : (server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN')}
+                                    </td>
                                     <td>
                                         <span className={`status-badge ${server.status === 1 ? 'active' : 'offline'}`}>
                                             {server.status === 1 ? 'ACTIVE' : 'OFFLINE'}
@@ -318,9 +354,15 @@ export default function ServersPage() {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Protocol</label>
-                                        <select name="protocol" className="glass-input" defaultValue={editingServer?.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}>
+                                        <select 
+                                            name="protocol" 
+                                            className="glass-input" 
+                                            value={selectedProtocol}
+                                            onChange={(e) => setSelectedProtocol(e.target.value)}
+                                        >
                                             <option value="OpenVPN">OpenVPN</option>
                                             <option value="WireGuard">WireGuard</option>
+                                            <option value="Both">Both (OpenVPN & WireGuard)</option>
                                         </select>
                                     </div>
                                     <div className="form-group">
@@ -349,16 +391,40 @@ export default function ServersPage() {
                                     <label>Password (Optional)</label>
                                     <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder="Leave empty if none" />
                                 </div>
-                                <div className="form-group">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <label style={{ margin: 0 }}>Raw Config</label>
+                                {selectedProtocol === 'Both' ? (
+                                    <>
                                         <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
-                                        <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
-                                            Upload File
-                                        </button>
+                                        <div className="form-group">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <label style={{ margin: 0 }}>OpenVPN Config</label>
+                                                <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
+                                                    Upload File
+                                                </button>
+                                            </div>
+                                            <textarea name="config_openvpn" className="glass-input" rows={5} defaultValue={editingServer?.config || ''} placeholder="Paste OpenVPN config here..."></textarea>
+                                        </div>
+                                        <div className="form-group">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <label style={{ margin: 0 }}>WireGuard Config</label>
+                                                <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
+                                                    Upload File
+                                                </button>
+                                            </div>
+                                            <textarea name="config_wireguard" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || ''} placeholder="Paste WireGuard config here..."></textarea>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="form-group">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <label style={{ margin: 0 }}>Raw Config</label>
+                                            <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
+                                            <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
+                                                Upload File
+                                            </button>
+                                        </div>
+                                        <textarea name="config" className="glass-input" rows={5} defaultValue={selectedProtocol === 'WireGuard' ? (editingServer?.wireGuardConfig || '') : (editingServer?.config || '')} placeholder={`Paste ${selectedProtocol} config here...`}></textarea>
                                     </div>
-                                    <textarea name="config" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || editingServer?.config || ''} placeholder="Paste OpenVPN or WireGuard config here..."></textarea>
-                                </div>
+                                )}
                             </form>
                         </div>
                         <div className="modal-footer">
