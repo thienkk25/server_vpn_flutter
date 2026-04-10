@@ -15,13 +15,15 @@ export default function SettingsPage() {
         const formData = new FormData(e.currentTarget);
         
         try {
-            const parsedSeconds = parseInt(formData.get('flashSaleTimerSeconds') as string, 10);
+            const flashSaleEndDateVal = formData.get('flashSaleEndDate') as string;
+            const flashSaleEndDate = flashSaleEndDateVal ? new Date(flashSaleEndDateVal).toISOString() : null;
+
             await updateSettings({
                 maintenanceMode: formData.get('maintenanceMode') === 'on',
                 privacyPolicyUrl: formData.get('privacyPolicyUrl') as string,
                 termsOfServiceUrl: formData.get('termsOfServiceUrl') as string,
                 systemMessage: formData.get('systemMessage') as string,
-                flashSaleTimerSeconds: isNaN(parsedSeconds) ? 7200 : parsedSeconds
+                flashSaleEndDate: flashSaleEndDate
             });
             alert('Settings saved successfully!');
         } catch (error) {
@@ -34,6 +36,17 @@ export default function SettingsPage() {
     if (isLoadingSettings) {
         return <div className="text-center loading-text">Loading settings...</div>;
     }
+
+    const toDatetimeLocal = (isoString?: string | null) => {
+        if (!isoString) return '';
+        try {
+            const date = new Date(isoString);
+            date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+            return date.toISOString().slice(0,16);
+        } catch {
+            return '';
+        }
+    };
 
     return (
         <div className="section content-section">
@@ -86,16 +99,15 @@ export default function SettingsPage() {
                         />
                     </div>
                     <div className="form-group">
-                        <label>Flash Sale Countdown (Seconds)</label>
+                        <label>Flash Sale End Date</label>
                         <input 
-                            type="number" 
-                            name="flashSaleTimerSeconds" 
+                            type="datetime-local" 
+                            name="flashSaleEndDate" 
                             className="glass-input" 
-                            defaultValue={settings?.flashSaleTimerSeconds ?? 7200} 
-                            placeholder="e.g. 7200 for 2 hours (0 to disable)" 
+                            defaultValue={toDatetimeLocal(settings?.flashSaleEndDate)} 
                         />
                         <p className="text-muted" style={{ marginTop: '5px', fontSize: '0.9em' }}>
-                            Duration of the fake flash sale countdown in the app (e.g., 7200 = 2 hours, 0 = disable sale).
+                            End date/time of the flash sale. Clear to disable sale.
                         </p>
                     </div>
                     <div className="form-group text-right" style={{ marginTop: '20px' }}>

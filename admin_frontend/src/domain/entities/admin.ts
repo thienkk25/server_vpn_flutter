@@ -27,5 +27,5 @@ export interface SettingsEntity {
     privacyPolicyUrl: string;
     termsOfServiceUrl: string;
     systemMessage: string;
-    flashSaleTimerSeconds?: number;
+    flashSaleEndDate?: string | null;
 }

@@ -16,7 +16,7 @@ export class AdminSettingsUseCases {
         privacyPolicyUrl: 'https://example.com/privacy', 
         termsOfServiceUrl: 'https://example.com/tos',
         systemMessage: '',
-        flashSaleTimerSeconds: 7200
+        flashSaleEndDate: null
       };
       await this.docRef.set(defaultSettings);
       return defaultSettings;
