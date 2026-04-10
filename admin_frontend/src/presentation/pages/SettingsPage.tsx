@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
+    const { t } = useTranslation();
     const { settings, isLoadingSettings, fetchSettings, updateSettings, apiKey } = useAdminStore();
     const [isSaving, setIsSaving] = useState(false);
 
@@ -25,16 +27,16 @@ export default function SettingsPage() {
                 systemMessage: formData.get('systemMessage') as string,
                 flashSaleEndDate: flashSaleEndDate
             });
-            alert('Settings saved successfully!');
+            alert(t('settings_saved'));
         } catch (error) {
-            alert('Error saving settings');
+            alert(t('error_saving_settings'));
         } finally {
             setIsSaving(false);
         }
     };
 
     if (isLoadingSettings) {
-        return <div className="text-center loading-text">Loading settings...</div>;
+        return <div className="text-center loading-text">{t('loading_settings')}</div>;
     }
 
     const toDatetimeLocal = (isoString?: string | null) => {
@@ -60,15 +62,15 @@ export default function SettingsPage() {
                                 defaultChecked={settings?.maintenanceMode} 
                                 style={{ width: '20px', height: '20px' }} 
                             />
-                            <strong>Enable Maintenance Mode</strong>
+                            <strong>{t('enable_maintenance')}</strong>
                         </label>
                         <p className="text-muted" style={{ marginTop: '5px', fontSize: '0.9em' }}>
-                            If enabled, users might be restricted from accessing the VPN network.
+                            {t('maintenance_desc')}
                         </p>
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Privacy Policy URL</label>
+                            <label>{t('privacy_policy_url')}</label>
                             <input 
                                 type="url" 
                                 name="privacyPolicyUrl" 
@@ -78,7 +80,7 @@ export default function SettingsPage() {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Terms of Service URL</label>
+                            <label>{t('tos_url')}</label>
                             <input 
                                 type="url" 
                                 name="termsOfServiceUrl" 
@@ -89,17 +91,17 @@ export default function SettingsPage() {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label>System Message (Announcement)</label>
+                        <label>{t('system_message')}</label>
                         <textarea 
                             name="systemMessage" 
                             className="glass-input" 
                             rows={3} 
                             defaultValue={settings?.systemMessage} 
-                            placeholder="Leave empty for no announcement" 
+                            placeholder={t('leave_empty_no_announcement')} 
                         />
                     </div>
                     <div className="form-group">
-                        <label>Flash Sale End Date</label>
+                        <label>{t('flash_sale_end')}</label>
                         <input 
                             type="datetime-local" 
                             name="flashSaleEndDate" 
@@ -107,12 +109,12 @@ export default function SettingsPage() {
                             defaultValue={toDatetimeLocal(settings?.flashSaleEndDate)} 
                         />
                         <p className="text-muted" style={{ marginTop: '5px', fontSize: '0.9em' }}>
-                            End date/time of the flash sale. Clear to disable sale.
+                            {t('flash_sale_desc')}
                         </p>
                     </div>
                     <div className="form-group text-right" style={{ marginTop: '20px' }}>
                         <button type="submit" disabled={isSaving} className="primary-btn glow-effect">
-                            {isSaving ? 'Saving...' : 'Save Settings'}
+                            {isSaving ? t('saving') : t('save_settings')}
                         </button>
                     </div>
                 </form>

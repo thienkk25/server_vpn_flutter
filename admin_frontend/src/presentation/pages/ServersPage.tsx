@@ -2,8 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
 import { Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
 import type { ServerEntity } from '../../domain/entities/admin';
+import { useTranslation } from 'react-i18next';
 
 export default function ServersPage() {
+    const { t } = useTranslation();
     const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, importServers, apiKey } = useAdminStore();
     
     // Helper to conditionally Base64 encode if not already encoded
@@ -57,7 +59,7 @@ export default function ServersPage() {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
-        if (window.confirm(`Are you sure you want to delete ${selectedIds.length} server(s)?`)) {
+        if (window.confirm(t('confirm_delete_server'))) {
             setIsDeletingBulk(true);
             try {
                 for (const id of selectedIds) {
@@ -65,7 +67,7 @@ export default function ServersPage() {
                 }
                 setSelectedIds([]);
             } catch (error: any) {
-                alert(error.message || 'Failed to delete some servers');
+                alert(error.message || t('failed_delete_server'));
             } finally {
                 setIsDeletingBulk(false);
             }
@@ -86,14 +88,14 @@ export default function ServersPage() {
         try {
             const text = await file.text();
             const data = JSON.parse(text);
-            if (!Array.isArray(data)) throw new Error('Data should be an array of servers.');
+            if (!Array.isArray(data)) throw new Error(t('failed_import_json'));
             
-            if (window.confirm(`Found ${data.length} servers in file. Proceed to import?`)) {
+            if (window.confirm(t('found_servers', { count: data.length }))) {
                 await importServers(data);
-                alert('Import successful!');
+                alert(t('import_successful'));
             }
         } catch (error: any) {
-            alert('Failed to parse or import JSON: ' + error.message);
+            alert(t('failed_import_json') + ' ' + error.message);
         } finally {
             if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
         }
@@ -135,7 +137,7 @@ export default function ServersPage() {
                 }
             }
         } catch (error: any) {
-            alert('Failed to read config file: ' + error.message);
+            alert(t('failed_read_config') + ' ' + error.message);
         } finally {
             if (configFileInputRef.current) configFileInputRef.current.value = '';
         }
@@ -178,7 +180,7 @@ export default function ServersPage() {
             await saveServer(editingServer?.id || null, payload);
             setIsModalOpen(false);
         } catch (error: any) {
-            setErrorMsg(error.message || 'Failed to save server');
+            setErrorMsg(error.message || t('failed_save_server'));
         } finally {
             setIsSaving(false);
         }
@@ -186,12 +188,12 @@ export default function ServersPage() {
 
     const handleDelete = async (id: string | undefined) => {
         if (!id) return;
-        if (window.confirm('Are you sure you want to delete this server?')) {
+        if (window.confirm(t('confirm_delete_server'))) {
             setDeletingId(id);
             try {
                 await deleteServer(id);
             } catch (error: any) {
-                alert(error.message || 'Failed to delete server');
+                alert(error.message || t('failed_delete_server'));
             } finally {
                 setDeletingId(null);
             }
@@ -226,20 +228,20 @@ export default function ServersPage() {
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     {selectedIds.length > 0 && (
                         <button className="action-btn delete" onClick={handleBulkDelete} disabled={isDeletingBulk || isLoadingServers} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', borderRadius: '8px', border: '1px solid currentColor' }}>
-                            <Trash2 size={16} /> {isDeletingBulk ? 'Deleting...' : `Delete Selected (${selectedIds.length})`}
+                            <Trash2 size={16} /> {isDeletingBulk ? t('deleting') : t('delete_selected', { count: selectedIds.length })}
                         </button>
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
                     <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
-                        Import JSON
+                        {t('import_json')}
                     </button>
                     <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
-                        <RefreshCw size={16} /> Refresh
+                        <RefreshCw size={16} /> {t('refresh')}
                     </button>
                     <button className="primary-btn glow-effect" onClick={openCreate}>
-                        <Plus size={16} /> New Server
+                        <Plus size={16} /> {t('new_server')}
                     </button>
                 </div>
             </div>
@@ -256,22 +258,22 @@ export default function ServersPage() {
                                     style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                 />
                             </th>
-                            <th>Name</th>
-                            <th>Host / IP</th>
-                            <th>Protocol</th>
-                            <th>Status</th>
-                            <th>Tier</th>
-                            <th className="text-right">Actions</th>
+                            <th>{t('name')}</th>
+                            <th>{t('host_ip')}</th>
+                            <th>{t('protocol')}</th>
+                            <th>{t('status')}</th>
+                            <th>{t('tier')}</th>
+                            <th className="text-right">{t('actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoadingServers ? (
                             <tr>
-                                <td colSpan={7} className="text-center loading-text">Loading servers...</td>
+                                <td colSpan={7} className="text-center loading-text">{t('loading_servers')}</td>
                             </tr>
                         ) : servers.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="text-center text-muted">No servers found. Add one to get started.</td>
+                                <td colSpan={7} className="text-center text-muted">{t('no_servers_found')}</td>
                             </tr>
                         ) : (
                             servers.map(server => (
@@ -288,12 +290,12 @@ export default function ServersPage() {
                                     <td>{server.ip || '-'}</td>
                                     <td>
                                         {(server.onWireGuard === 1 && server.config && server.config.trim() !== '')
-                                            ? 'Both (OpenVPN & WireGuard)'
-                                            : (server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN')}
+                                            ? t('both_protocol')
+                                            : (server.onWireGuard === 1 ? t('wireguard') : t('openvpn'))}
                                     </td>
                                     <td>
                                         <span className={`status-badge ${server.status === 1 ? 'active' : 'offline'}`}>
-                                            {server.status === 1 ? 'ACTIVE' : 'OFFLINE'}
+                                            {server.status === 1 ? t('active') : t('offline')}
                                         </span>
                                     </td>
                                     <td>
@@ -304,15 +306,15 @@ export default function ServersPage() {
                                                 color: server.isVip === 1 ? '#000' : 'var(--text-light)'
                                             }}
                                         >
-                                            {server.isVip === 1 ? 'VIP' : 'FREE'}
+                                            {server.isVip === 1 ? t('vip') : t('free')}
                                         </span>
                                     </td>
                                     <td className="text-right">
                                         <button className="action-btn edit" onClick={() => openEdit(server)} style={{ marginRight: 8 }} disabled={deletingId === server.id}>
-                                            <Edit2 size={14} /> Edit
+                                            <Edit2 size={14} /> {t('edit')}
                                         </button>
                                         <button className="action-btn delete" onClick={() => handleDelete(server.id)} disabled={deletingId === server.id}>
-                                            <Trash2 size={14} /> {deletingId === server.id ? 'Deleting...' : 'Del'}
+                                            <Trash2 size={14} /> {deletingId === server.id ? t('deleting') : t('del')}
                                         </button>
 
                                     </td>
@@ -327,7 +329,7 @@ export default function ServersPage() {
                 <div className="modal-overlay">
                     <div className="modal-content glass-panel">
                         <div className="modal-header">
-                            <h3>{editingServer ? 'Edit Server' : 'Add New Server'}</h3>
+                            <h3>{editingServer ? t('edit_server') : t('add_new_server')}</h3>
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
@@ -339,98 +341,98 @@ export default function ServersPage() {
                             <form id="serverForm" onSubmit={handleSave}>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Server Name</label>
-                                        <input type="text" name="name" className="glass-input" required defaultValue={editingServer?.name} placeholder="e.g. US East 1" />
+                                        <label>{t('server_name')}</label>
+                                        <input type="text" name="name" className="glass-input" required defaultValue={editingServer?.name} placeholder={t('eg_us_east_1')} />
                                     </div>
                                     <div className="form-group">
-                                        <label>Region</label>
-                                        <input type="text" name="region" className="glass-input" required defaultValue={editingServer?.region || ''} placeholder="e.g. US, SG..." />
+                                        <label>{t('region')}</label>
+                                        <input type="text" name="region" className="glass-input" required defaultValue={editingServer?.region || ''} placeholder={t('eg_us_sg')} />
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Host (IP/Domain)</label>
+                                    <label>{t('host_ip_domain')}</label>
                                     <input type="text" name="ip" className="glass-input" required defaultValue={editingServer?.ip} placeholder="192.168.1.1" />
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Protocol</label>
+                                        <label>{t('protocol')}</label>
                                         <select 
                                             name="protocol" 
                                             className="glass-input" 
                                             value={selectedProtocol}
                                             onChange={(e) => setSelectedProtocol(e.target.value)}
                                         >
-                                            <option value="OpenVPN">OpenVPN</option>
-                                            <option value="WireGuard">WireGuard</option>
-                                            <option value="Both">Both (OpenVPN & WireGuard)</option>
+                                            <option value="OpenVPN">{t('openvpn')}</option>
+                                            <option value="WireGuard">{t('wireguard')}</option>
+                                            <option value="Both">{t('both_protocol')}</option>
                                         </select>
                                     </div>
                                     <div className="form-group">
-                                        <label>Status</label>
+                                        <label>{t('status')}</label>
                                         <select name="status" className="glass-input" defaultValue={editingServer?.status === 1 ? 'active' : 'offline'}>
-                                            <option value="active">Active</option>
-                                            <option value="offline">Offline</option>
+                                            <option value="active">{t('active')}</option>
+                                            <option value="offline">{t('offline')}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <input type="checkbox" name="isVip" id="serverIsVip" defaultChecked={editingServer?.isVip === 1} style={{ width: 16, height: 16 }} />
-                                    <label htmlFor="serverIsVip" style={{ margin: 0, padding: 0 }}>Require VIP Subscription</label>
+                                    <label htmlFor="serverIsVip" style={{ margin: 0, padding: 0 }}>{t('require_vip_sub')}</label>
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Username</label>
-                                        <input type="text" name="username" className="glass-input" defaultValue={editingServer?.username || ''} placeholder="e.g. vpn" />
+                                        <label>{t('username')}</label>
+                                        <input type="text" name="username" className="glass-input" defaultValue={editingServer?.username || ''} placeholder={t('eg_vpn')} />
                                     </div>
                                     <div className="form-group">
-                                        <label>Version</label>
-                                        <input type="number" name="version" className="glass-input" defaultValue={editingServer?.version || 1} placeholder="e.g. 1" min="1" />
+                                        <label>{t('version')}</label>
+                                        <input type="number" name="version" className="glass-input" defaultValue={editingServer?.version || 1} placeholder={t('eg_1')} min="1" />
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Password (Optional)</label>
-                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder="Leave empty if none" />
+                                    <label>{t('password_optional')}</label>
+                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder={t('leave_empty_if_none')} />
                                 </div>
                                 {selectedProtocol === 'Both' ? (
                                     <>
                                         <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
                                         <div className="form-group">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                <label style={{ margin: 0 }}>OpenVPN Config</label>
+                                                <label style={{ margin: 0 }}>{t('openvpn_config')}</label>
                                                 <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
-                                                    Upload File
+                                                    {t('upload_file')}
                                                 </button>
                                             </div>
-                                            <textarea name="config_openvpn" className="glass-input" rows={5} defaultValue={editingServer?.config || ''} placeholder="Paste OpenVPN config here..."></textarea>
+                                            <textarea name="config_openvpn" className="glass-input" rows={5} defaultValue={editingServer?.config || ''} placeholder={t('paste_openvpn_config')}></textarea>
                                         </div>
                                         <div className="form-group">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                <label style={{ margin: 0 }}>WireGuard Config</label>
+                                                <label style={{ margin: 0 }}>{t('wireguard_config')}</label>
                                                 <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
-                                                    Upload File
+                                                    {t('upload_file')}
                                                 </button>
                                             </div>
-                                            <textarea name="config_wireguard" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || ''} placeholder="Paste WireGuard config here..."></textarea>
+                                            <textarea name="config_wireguard" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || ''} placeholder={t('paste_wireguard_config')}></textarea>
                                         </div>
                                     </>
                                 ) : (
                                     <div className="form-group">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                            <label style={{ margin: 0 }}>Raw Config</label>
+                                            <label style={{ margin: 0 }}>{t('raw_config')}</label>
                                             <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
                                             <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
-                                                Upload File
+                                                {t('upload_file')}
                                             </button>
                                         </div>
-                                        <textarea name="config" className="glass-input" rows={5} defaultValue={selectedProtocol === 'WireGuard' ? (editingServer?.wireGuardConfig || '') : (editingServer?.config || '')} placeholder={`Paste ${selectedProtocol} config here...`}></textarea>
+                                        <textarea name="config" className="glass-input" rows={5} defaultValue={selectedProtocol === 'WireGuard' ? (editingServer?.wireGuardConfig || '') : (editingServer?.config || '')} placeholder={selectedProtocol === 'WireGuard' ? t('paste_wireguard_config') : t('paste_openvpn_config')}></textarea>
                                     </div>
                                 )}
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>{t('cancel')}</button>
                             <button type="submit" form="serverForm" className="primary-btn glow-effect" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Server'}
+                                {isSaving ? t('saving') : t('save_server')}
                             </button>
                         </div>
                     </div>
