@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export interface JWSTransactionDecodedPayload {
   originalTransactionId: string;
@@ -12,10 +13,44 @@ export interface JWSTransactionDecodedPayload {
   appAccountToken?: string;
   inAppOwnershipType?: string;
   type?: string;
+  offerIdentifier?: string;
+  offerType?: number;
   [key: string]: any;
 }
 
+export interface PromotionalOfferSignatureParams {
+  appBundleId: string;
+  keyId: string;
+  privateKey: string;
+  productId: string;
+  offerIdentifier: string;
+  applicationUsername: string;
+  nonce: string;
+  timestamp: number;
+}
+
 export class AppleIapService {
+  /**
+   * Generates a signature for an Apple Promotional Offer
+   */
+  generatePromotionalOfferSignature(params: PromotionalOfferSignatureParams): string {
+    const payloadBuffer = [
+      params.appBundleId,
+      params.keyId,
+      params.productId,
+      params.offerIdentifier,
+      params.applicationUsername.toLowerCase(),
+      params.nonce,
+      params.timestamp.toString(),
+    ].join('\u200b');
+
+    const sign = crypto.createSign('sha256');
+    sign.update(payloadBuffer);
+    
+    // Sign using the `.p8` private key contents
+    return sign.sign(params.privateKey, 'base64');
+  }
+
   /**
    * Verifies an Apple StoreKit 2 JWS transaction locally using the embedded x5c certificate.
    */
