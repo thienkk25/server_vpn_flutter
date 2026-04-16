@@ -3,17 +3,19 @@ import { useAdminStore } from '../hooks/useAdminStore';
 import { Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
 import type { ServerEntity } from '../../domain/entities/admin';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../components/ToastContext';
 
 export default function ServersPage() {
     const { t } = useTranslation();
     const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, importServers, apiKey } = useAdminStore();
-    
+    const { showToast } = useToast();
+
     // Helper to conditionally Base64 encode if not already encoded
     const ensureBase64 = (text: string) => {
         if (!text || text.trim() === '') return '';
         const noSpaceStr = text.replace(/[\r\n\s]/g, '');
         const base64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-        
+
         if (base64Regex.test(noSpaceStr)) {
             try {
                 atob(noSpaceStr);
@@ -22,7 +24,7 @@ export default function ServersPage() {
                 // Ignore and encode
             }
         }
-        
+
         // Encode to base64
         const bytes = new TextEncoder().encode(text);
         const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
@@ -37,6 +39,15 @@ export default function ServersPage() {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 6;
+
+    // Pagination derived data
+    const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+    const currentServers = servers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(servers.length / ITEMS_PER_PAGE);
 
     const toggleSelectAll = () => {
         if (servers.length === 0) return;
@@ -65,9 +76,10 @@ export default function ServersPage() {
                 for (const id of selectedIds) {
                     await deleteServer(id);
                 }
+                showToast(t('delete_selected', { count: selectedIds.length }) + ' successful', 'success');
                 setSelectedIds([]);
             } catch (error: any) {
-                alert(error.message || t('failed_delete_server'));
+                showToast(error.message || t('failed_delete_server'), 'error');
             } finally {
                 setIsDeletingBulk(false);
             }
@@ -89,13 +101,13 @@ export default function ServersPage() {
             const text = await file.text();
             const data = JSON.parse(text);
             if (!Array.isArray(data)) throw new Error(t('failed_import_json'));
-            
+
             if (window.confirm(t('found_servers', { count: data.length }))) {
                 await importServers(data);
-                alert(t('import_successful'));
+                showToast(t('import_successful'), 'success');
             }
         } catch (error: any) {
-            alert(t('failed_import_json') + ' ' + error.message);
+            showToast(t('failed_import_json') + ' ' + error.message, 'error');
         } finally {
             if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
         }
@@ -118,16 +130,16 @@ export default function ServersPage() {
                 // Determine protocol
                 const extStr = file.name.toLowerCase();
                 const isWgFile = extStr.endsWith('.conf') || text.includes('[Interface]');
-                
+
                 if (selectedProtocol === 'Both') {
                     if (isWgFile) {
-                         if (form.config_wireguard) form.config_wireguard.value = text;
+                        if (form.config_wireguard) form.config_wireguard.value = text;
                     } else {
-                         if (form.config_openvpn) form.config_openvpn.value = text;
+                        if (form.config_openvpn) form.config_openvpn.value = text;
                     }
                 } else {
                     if (form.config) {
-                         form.config.value = text;
+                        form.config.value = text;
                     }
                     if (isWgFile) {
                         setSelectedProtocol('WireGuard');
@@ -137,7 +149,7 @@ export default function ServersPage() {
                 }
             }
         } catch (error: any) {
-            alert(t('failed_read_config') + ' ' + error.message);
+            showToast(t('failed_read_config') + ' ' + error.message, 'error');
         } finally {
             if (configFileInputRef.current) configFileInputRef.current.value = '';
         }
@@ -149,7 +161,7 @@ export default function ServersPage() {
         setIsSaving(true);
         const formData = new FormData(e.currentTarget);
         const protocol = formData.get('protocol') as string;
-        
+
         let safeConfigOpenVPN = '';
         let safeConfigWireGuard = '';
 
@@ -178,6 +190,7 @@ export default function ServersPage() {
 
         try {
             await saveServer(editingServer?.id || null, payload);
+            showToast(t('save_server') + ' successful', 'success');
             setIsModalOpen(false);
         } catch (error: any) {
             setErrorMsg(error.message || t('failed_save_server'));
@@ -192,8 +205,9 @@ export default function ServersPage() {
             setDeletingId(id);
             try {
                 await deleteServer(id);
+                showToast(t('del') + ' successful', 'success');
             } catch (error: any) {
-                alert(error.message || t('failed_delete_server'));
+                showToast(error.message || t('failed_delete_server'), 'error');
             } finally {
                 setDeletingId(null);
             }
@@ -203,7 +217,7 @@ export default function ServersPage() {
     const openEdit = (server: ServerEntity) => {
         setEditingServer(server);
         setErrorMsg(null);
-        
+
         let proto = 'OpenVPN';
         if (server.onWireGuard === 1 && server.config && server.config.trim() !== '') {
             proto = 'Both';
@@ -211,7 +225,7 @@ export default function ServersPage() {
             proto = 'WireGuard';
         }
         setSelectedProtocol(proto);
-        
+
         setIsModalOpen(true);
     };
 
@@ -251,10 +265,10 @@ export default function ServersPage() {
                     <thead>
                         <tr>
                             <th style={{ width: '40px', textAlign: 'center' }}>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={servers.length > 0 && selectedIds.length === servers.length}
-                                    onChange={toggleSelectAll} 
+                                    onChange={toggleSelectAll}
                                     style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                 />
                             </th>
@@ -276,13 +290,13 @@ export default function ServersPage() {
                                 <td colSpan={7} className="text-center text-muted">{t('no_servers_found')}</td>
                             </tr>
                         ) : (
-                            servers.map(server => (
+                            currentServers.map(server => (
                                 <tr key={server.id} style={{ backgroundColor: selectedIds.includes(server.id!) ? 'rgba(74, 158, 255, 0.05)' : 'inherit' }}>
                                     <td style={{ textAlign: 'center' }}>
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={selectedIds.includes(server.id!)}
-                                            onChange={() => toggleSelect(server.id)} 
+                                            onChange={() => toggleSelect(server.id)}
                                             style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                         />
                                     </td>
@@ -323,6 +337,29 @@ export default function ServersPage() {
                         )}
                     </tbody>
                 </table>
+                {!isLoadingServers && totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <button
+                            className="secondary-btn"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            style={{ padding: '6px 12px' }}
+                        >
+                            &laquo; Prev
+                        </button>
+                        <span style={{ fontSize: '0.9em', color: 'var(--text-light)' }}>
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            className="secondary-btn"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            style={{ padding: '6px 12px' }}
+                        >
+                            Next &raquo;
+                        </button>
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (
@@ -356,9 +393,9 @@ export default function ServersPage() {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>{t('protocol')}</label>
-                                        <select 
-                                            name="protocol" 
-                                            className="glass-input" 
+                                        <select
+                                            name="protocol"
+                                            className="glass-input"
                                             value={selectedProtocol}
                                             onChange={(e) => setSelectedProtocol(e.target.value)}
                                         >

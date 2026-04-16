@@ -100,6 +100,17 @@ const resources = {
       "flash_sale_end": "Flash Sale End Date",
       "flash_sale_desc": "End date/time of the flash sale. Clear to disable sale.",
 
+      "backup_restore": "Backup & Restore",
+      "backup_restore_desc": "Export and import system database",
+      "download_backup": "Download Backup",
+      "upload_restore": "Upload and Restore",
+      "select_backup_file": "Select JSON Backup File",
+      "restoring": "Restoring...",
+      "restore_success": "Restore completed successfully!",
+      "restore_failed": "Failed to restore data.",
+      "backup_failed": "Failed to download backup.",
+      "confirm_restore": "Are you sure you want to restore? This will overwrite existing matching records.",
+
       "language": "Language",
       "vietnamese": "Vietnamese",
       "english": "English"
@@ -202,6 +213,17 @@ const resources = {
       "leave_empty_no_announcement": "Để trống nếu không có thông báo",
       "flash_sale_end": "Ngày Kết Thúc Flash Sale",
       "flash_sale_desc": "Ngày/giờ kết thúc flash sale. Xoá để vô hiệu hoá.",
+
+      "backup_restore": "Sao Lưu & Phục Hồi",
+      "backup_restore_desc": "Xuất và nhập cơ sở dữ liệu hệ thống",
+      "download_backup": "Tải Bản Sao Lưu",
+      "upload_restore": "Tải Lên và Phục Hồi",
+      "select_backup_file": "Chọn File Backup JSON",
+      "restoring": "Đang phục hồi...",
+      "restore_success": "Phục hồi dữ liệu thành công!",
+      "restore_failed": "Phục hồi dữ liệu thất bại.",
+      "backup_failed": "Tải bản sao lưu thất bại.",
+      "confirm_restore": "Bạn có chắc chắn muốn phục hồi không? Quá trình này sẽ ghi đè lên các bản ghi hiện tại.",
 
       "language": "Ngôn ngữ",
       "vietnamese": "Tiếng Việt",

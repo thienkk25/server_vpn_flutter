@@ -3,10 +3,12 @@ import { useAdminStore } from '../hooks/useAdminStore';
 import { Trash2, RefreshCw, Plus, Edit2 } from 'lucide-react';
 import type { UserEntity } from '../../domain/entities/admin';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../components/ToastContext';
 
 export default function UsersPage() {
     const { t } = useTranslation();
     const { users, isLoadingUsers, fetchUsers, deleteUser, saveUser, apiKey } = useAdminStore();
+    const { showToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<Partial<UserEntity> | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -34,6 +36,7 @@ export default function UsersPage() {
 
         try {
             await saveUser(editingUser?.uid || null, payload);
+            showToast('User saved successfully', 'success');
             setIsModalOpen(false);
         } catch (error: any) {
             setErrorMsg(error.message || t('failed_save_user'));
@@ -47,8 +50,9 @@ export default function UsersPage() {
             setDeletingId(uid);
             try {
                 await deleteUser(uid);
+                showToast('User deleted successfully', 'success');
             } catch (error: any) {
-                alert(error.message || t('failed_delete_user'));
+                showToast(error.message || t('failed_delete_user'), 'error');
             } finally {
                 setDeletingId(null);
             }

@@ -13,6 +13,8 @@ import { AdminUserUseCases } from '../../application/usecases/AdminUserUseCases'
 import { AdminUserController } from '../controllers/AdminUserController';
 import { AdminSettingsUseCases } from '../../application/usecases/AdminSettingsUseCases';
 import { AdminSettingsController } from '../controllers/AdminSettingsController';
+import { AdminBackupRestoreUseCases } from '../../application/usecases/AdminBackupRestoreUseCases';
+import { AdminBackupRestoreController } from '../controllers/AdminBackupRestoreController';
 
 const router = Router();
 
@@ -34,6 +36,9 @@ const adminUserController = new AdminUserController(userUseCases);
 const settingsUseCases = new AdminSettingsUseCases();
 const adminSettingsController = new AdminSettingsController(settingsUseCases);
 
+const backupRestoreUseCases = new AdminBackupRestoreUseCases();
+const adminBackupRestoreController = new AdminBackupRestoreController(backupRestoreUseCases);
+
 // Protect all /admin routes with adminMiddleware
 router.use(adminMiddleware);
 
@@ -50,5 +55,8 @@ router.delete('/users/:id', adminUserController.deleteUser);
 
 router.get('/settings', adminSettingsController.getSettings);
 router.put('/settings', adminSettingsController.updateSettings);
+
+router.get('/backup', adminBackupRestoreController.exportData);
+router.post('/restore', adminBackupRestoreController.importData);
 
 export default router;

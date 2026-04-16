@@ -515,3 +515,14 @@ textarea.glass-input {
         padding: 16px;
     }
 }
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%) translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+    }
+}
