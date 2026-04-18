@@ -29,35 +29,19 @@ export class SubscriptionFirebaseRepository implements ISubscriptionRepository {
     return subDoc.data() as UserSubscriptionEntity;
   }
 
+  async getSubscriptionByTransactionId(transactionId: string): Promise<UserSubscriptionEntity | null> {
+    if (!this.subscriptions) throw new Error("Firebase DB not initialized");
+    const subDoc = await this.subscriptions.doc(transactionId).get();
+    if (!subDoc.exists) return null;
+    return subDoc.data() as UserSubscriptionEntity;
+  }
+
   async saveSubscription(subscription: UserSubscriptionEntity): Promise<void> {
     if (!this.subscriptions || !this.users || !db) throw new Error("Firebase DB not initialized");
     
     const batch = db.batch();
     
     if (subscription.originalTransactionId) {
-      // Find old users who might be using this exact subscription and revoke them
-      const existingDocs = await this.subscriptions
-        .where('originalTransactionId', '==', subscription.originalTransactionId)
-        .where('isActive', '==', true)
-        .get();
-
-      for (const doc of existingDocs.docs) {
-        if (doc.data().userId !== subscription.userId) {
-           const oldUserId = doc.data().userId;
-           batch.update(doc.ref, { 
-             isActive: false, 
-             updatedAt: Date.now() 
-           });
-           
-           // Revoke the old user's premium status in users collection
-           const oldUserRef = this.users.doc(oldUserId);
-           batch.update(oldUserRef, {
-             isPremium: false,
-             activeProductId: null
-           });
-        }
-      }
-
       // Save subscription document
       const subRef = this.subscriptions.doc(subscription.originalTransactionId);
       batch.set(subRef, { ...subscription, updatedAt: Date.now() }, { merge: true });

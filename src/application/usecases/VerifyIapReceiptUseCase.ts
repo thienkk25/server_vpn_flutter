@@ -51,6 +51,12 @@ export class VerifyIapReceiptUseCase {
     // but initially we assume it's active if it's a subscription.
     let autoRenewStatus = isActive && expiresAt !== 32503680000000;
 
+    // CHỐNG ACCOUNT HOPPING
+    const existingSub = await this.subscriptionRepository.getSubscriptionByTransactionId(transaction.originalTransactionId);
+    if (existingSub && existingSub.userId && existingSub.userId !== userId) {
+      throw new Error(`Receipt/Giao dịch này đã được liên kết với một tài khoản khác. Vui lòng đăng nhập đúng tài khoản đẻ Khôi Phục (Restore).`);
+    }
+
     const subscriptionData: UserSubscriptionEntity = {
       userId,
       isActive,
