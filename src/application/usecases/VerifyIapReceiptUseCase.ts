@@ -65,7 +65,9 @@ export class VerifyIapReceiptUseCase {
       originalTransactionId: transaction.originalTransactionId,
       autoRenewStatus,
       isInBillingRetry: false,
-      environment: transaction.environment || 'Production' // JWS includes environment
+      environment: transaction.environment || 'Production',
+      offerIdentifier: transaction.offerIdentifier,
+      offerType: transaction.offerType
     };
 
     // 6. save subscription and update user are handled inside saveSubscription

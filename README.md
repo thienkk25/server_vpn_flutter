@@ -12,6 +12,10 @@ This is the backend and admin frontend for the VPN Flutter application.
 - **Backend**: Express + TypeScript (`/src`)
 - **Admin Panel**: React + Vite + TypeScript (`/admin_frontend`)
 
+## IAP Security & Features
+- **Account Hopping Protection**: Automatically rejects Restore Purchase attempts if the receipt (`originalTransactionId`) is already linked to a different specific user, preventing iCloud receipt sharing across different App accounts.
+- **Advanced Offers Support**: Full integration natively parsing and generating signatures for Introductory Offers, Promotional Offers, and Offer Codes via Apple's `.p8` cryptographic keys.
+
 ## Scripts
 - `npm run dev` - Run the backend development server.
 - `npm run build` - Compile both frontend and backend for production.

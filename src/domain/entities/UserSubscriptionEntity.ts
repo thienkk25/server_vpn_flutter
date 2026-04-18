@@ -7,6 +7,8 @@ export interface UserSubscriptionEntity {
   autoRenewStatus?: boolean;
   isInBillingRetry?: boolean;
   environment?: string;
+  offerIdentifier?: string;
+  offerType?: number;
   createdAt?: number;
   updatedAt?: number;
 }
