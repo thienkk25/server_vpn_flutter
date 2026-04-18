@@ -9,8 +9,38 @@ export class VerifyIapReceiptUseCase {
   ) {}
 
   async execute(userId: string, jwsRepresentation: string): Promise<UserSubscriptionEntity> {
-    // 1. Verify and decode the StoreKit 2 JWS token using Apple's Embedded Public Key
-    const transaction = await this.appleIapService.verifyJwsTransaction(jwsRepresentation);
+    let transaction: any = {};
+
+    // Determine if the incoming payload is a StoreKit 2 JWS Token or a StoreKit 1 App Receipt
+    if (jwsRepresentation.includes('.')) {
+      // 1A. Verify and decode the StoreKit 2 JWS token
+      transaction = await this.appleIapService.verifyJwsTransaction(jwsRepresentation);
+    } else {
+      // 1B. Verify StoreKit 1 App Receipt (Base64)
+      const receiptResponse = await this.appleIapService.verifyAppReceipt(jwsRepresentation, process.env.APPLE_SHARED_SECRET);
+      
+      const latestReceipts = receiptResponse.latest_receipt_info;
+      if (!latestReceipts || latestReceipts.length === 0) {
+        throw new Error('No receipt info found in the App Receipt.');
+      }
+
+      // Sort to get the most recent transaction
+      latestReceipts.sort((a: any, b: any) => parseInt(b.expires_date_ms || '0') - parseInt(a.expires_date_ms || '0'));
+      const latest = latestReceipts[0];
+      
+      transaction = {
+        bundleId: receiptResponse.receipt.bundle_id,
+        productId: latest.product_id,
+        originalTransactionId: latest.original_transaction_id,
+        transactionId: latest.transaction_id,
+        purchaseDate: parseInt(latest.purchase_date_ms || '0'),
+        expiresDate: latest.expires_date_ms ? parseInt(latest.expires_date_ms) : undefined,
+        revocationDate: latest.cancellation_date_ms ? parseInt(latest.cancellation_date_ms) : undefined,
+        environment: receiptResponse.environment,
+        offerIdentifier: latest.promotional_offer_id,
+        offerType: latest.promotional_offer_id ? 2 : undefined
+      };
+    }
 
     // 2. Validate bundle_id
     if (transaction.bundleId !== process.env.APP_BUNDLE_ID) {

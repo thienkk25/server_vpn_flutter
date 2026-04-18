@@ -79,4 +79,42 @@ export class AppleIapService {
       });
     });
   }
+
+  /**
+   * Verifies an Apple StoreKit 1 App Receipt (Base64 PKCS#7).
+   */
+  async verifyAppReceipt(receiptData: string, password?: string): Promise<any> {
+    const payload = {
+      'receipt-data': receiptData,
+      password: password
+    };
+
+    try {
+      // Fetch from production
+      let response = await fetch('https://buy.itunes.apple.com/verifyReceipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      let data = await response.json();
+
+      // If status is 21007, the receipt is from the sandbox environment
+      if (data.status === 21007) {
+        response = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        data = await response.json();
+      }
+
+      if (data.status !== 0) {
+        throw new Error(`Receipt verification failed with status: ${data.status}`);
+      }
+
+      return data;
+    } catch (error: any) {
+      throw new Error(`Failed to verify App Receipt: ${error.message}`);
+    }
+  }
 }
