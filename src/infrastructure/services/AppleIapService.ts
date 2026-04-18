@@ -47,8 +47,11 @@ export class AppleIapService {
     const sign = crypto.createSign('sha256');
     sign.update(payloadBuffer);
     
+    // Ensure the private key has correct line breaks for PEM format
+    const formattedPrivateKey = params.privateKey.replace(/\\n/g, '\n');
+    
     // Sign using the `.p8` private key contents
-    return sign.sign(params.privateKey, 'base64');
+    return sign.sign(formattedPrivateKey, 'base64');
   }
 
   /**
