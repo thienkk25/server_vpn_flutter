@@ -19,6 +19,7 @@ const iapWebhookController = new IapWebhookController();
 // Routes
 router.post('/verify', authMiddleware, iapController.verifyReceipt);
 router.post('/restore', authMiddleware, iapController.restorePurchase);
+router.post('/promotional-offer/signature', authMiddleware, iapController.getPromotionalSignature);
 router.post('/webhook', iapWebhookController.handleWebhook);
 
 export default router;

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export interface JWSTransactionDecodedPayload {
   originalTransactionId: string;
@@ -43,5 +44,46 @@ export class AppleIapService {
         resolve(payload as JWSTransactionDecodedPayload);
       });
     });
+  }
+
+  /**
+   * Tạo chữ ký bảo mật (Signature) cho Apple StoreKit 2 Promotional Offer.
+   * Yêu cầu các biến môi trường: APPLE_BUNDLE_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY
+   */
+  generatePromotionalOfferSignature(productId: string, offerIdentifier: string, applicationUsername: string = ''): any {
+    const bundleId = process.env.APPLE_BUNDLE_ID || process.env.APP_BUNDLE_ID;
+    const keyIdentifier = process.env.APPLE_KEY_ID;
+    let privateKey = process.env.APPLE_PRIVATE_KEY;
+
+    if (!bundleId || !keyIdentifier || !privateKey) {
+      throw new Error('Thiếu cấu hình biến môi trường Apple (APPLE_BUNDLE_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY) để tạo chữ ký.');
+    }
+
+    // Xử lý privateKey nếu được truyền qua .env thành chuỗi liên tục
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+       // Thêm header và footer nếu thiếu (format PKCS8)
+       privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+    }
+
+    const nonce = crypto.randomUUID().toLowerCase(); // UUID v4 lowercase
+    const timestamp = Math.floor(Date.now() / 1000); // Miliseconds to seconds
+
+    // Payload yêu cầu của Apple:
+    // appBundleId + '\u2008' + keyIdentifier + '\u2008' + productIdentifier + '\u2008' + offerIdentifier + '\u2008' + applicationUsername + '\u2008' + nonce + '\u2008' + timestamp
+    const payload = `${bundleId}\u2008${keyIdentifier}\u2008${productId}\u2008${offerIdentifier}\u2008${applicationUsername}\u2008${nonce}\u2008${timestamp}`;
+
+    // Ký bằng thuật toán ECDSA P-256 kèm SHA-256
+    const sign = crypto.createSign('SHA256');
+    sign.update(payload);
+    sign.end();
+    
+    const signatureBase64 = sign.sign(privateKey, 'base64');
+
+    return {
+      signature: signatureBase64,
+      nonce: nonce,
+      timestamp: timestamp,
+      keyIdentifier: keyIdentifier
+    };
   }
 }
