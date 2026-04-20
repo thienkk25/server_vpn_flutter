@@ -27,6 +27,11 @@ interface AdminState {
     isLoadingSettings: boolean;
     fetchSettings: () => Promise<void>;
     updateSettings: (settings: Partial<SettingsEntity>) => Promise<void>;
+
+    // Webhooks
+    webhooks: any[];
+    isLoadingWebhooks: boolean;
+    fetchWebhooks: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -140,6 +145,23 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         } catch (error) {
             console.error('Failed to update settings:', error);
             throw error;
+        }
+    },
+
+    webhooks: [],
+    isLoadingWebhooks: false,
+    fetchWebhooks: async () => {
+        set({ isLoadingWebhooks: true });
+        try {
+            const result = await adminRepository.getIapWebhooks();
+            // Assuming the backend returns { success: true, data: [...] }
+            const webhooks = ((result as any).data) || result; 
+            set({ webhooks: Array.isArray(webhooks) ? webhooks : [] });
+        } catch (error) {
+            console.error('Failed to fetch webhooks:', error);
+            throw error;
+        } finally {
+            set({ isLoadingWebhooks: false });
         }
     }
 }));

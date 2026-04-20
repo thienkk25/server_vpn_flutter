@@ -19,7 +19,8 @@
     "firebase-admin": "^13.7.0",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "@apple/app-store-server-library": "^3.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

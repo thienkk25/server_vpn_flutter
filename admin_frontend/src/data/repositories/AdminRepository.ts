@@ -45,6 +45,10 @@ export class AdminRepository {
     async updateSettings(settings: Partial<SettingsEntity>): Promise<void> {
         return await apiClient.put('/settings', settings);
     }
+
+    async getIapWebhooks(): Promise<any[]> {
+        return await apiClient.get<any[]>('/iap/webhooks');
+    }
 }
 
 export const adminRepository = new AdminRepository();

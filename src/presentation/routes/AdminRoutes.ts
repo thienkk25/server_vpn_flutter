@@ -48,7 +48,13 @@ router.post('/users', adminUserController.createUser);
 router.put('/users/:id', adminUserController.updateUser);
 router.delete('/users/:id', adminUserController.deleteUser);
 
+import { AdminIapController } from '../controllers/AdminIapController';
+
+const adminIapController = new AdminIapController();
+
 router.get('/settings', adminSettingsController.getSettings);
 router.put('/settings', adminSettingsController.updateSettings);
+
+router.get('/iap/webhooks', adminIapController.getWebhooks);
 
 export default router;

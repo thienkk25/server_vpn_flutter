@@ -3,15 +3,16 @@ import { useAdminStore } from './presentation/hooks/useAdminStore';
 import ServersPage from './presentation/pages/ServersPage';
 import UsersPage from './presentation/pages/UsersPage';
 import SettingsPage from './presentation/pages/SettingsPage';
-import { LayoutDashboard, Users, Settings, KeyRound } from 'lucide-react';
+import IapWebhooksPage from './presentation/pages/IapWebhooksPage';
+import { LayoutDashboard, Users, Settings, KeyRound, BellRing } from 'lucide-react';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'servers' | 'users' | 'settings'>('servers');
-  const [mountedTabs, setMountedTabs] = useState({ servers: true, users: false, settings: false });
+  const [activeTab, setActiveTab] = useState<'servers' | 'users' | 'settings' | 'webhooks'>('servers');
+  const [mountedTabs, setMountedTabs] = useState({ servers: true, users: false, settings: false, webhooks: false });
   const { apiKey, setApiKey } = useAdminStore();
   const [tempKey, setTempKey] = useState(apiKey);
 
-  const handleTabChange = (tab: 'servers' | 'users' | 'settings') => {
+  const handleTabChange = (tab: 'servers' | 'users' | 'settings' | 'webhooks') => {
     setActiveTab(tab);
     if (!mountedTabs[tab]) {
       setMountedTabs(prev => ({ ...prev, [tab]: true }));
@@ -39,6 +40,10 @@ function App() {
           <a href="#" className={`nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('users'); }}>
             <Users size={20} />
             Users
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'webhooks' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('webhooks'); }}>
+            <BellRing size={20} />
+            IAP Webhooks
           </a>
           <a href="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('settings'); }}>
             <Settings size={20} />
@@ -80,11 +85,13 @@ function App() {
             <h2>
               {activeTab === 'servers' && 'Server Management'}
               {activeTab === 'users' && 'User Management'}
+              {activeTab === 'webhooks' && 'App Store Webhooks'}
               {activeTab === 'settings' && 'App Settings'}
             </h2>
             <p className="subtitle">
               {activeTab === 'servers' && 'Monitor and configure your VPN network nodes'}
               {activeTab === 'users' && 'Monitor user accounts and subscriptions'}
+              {activeTab === 'webhooks' && 'Monitor real-time Apple In-App Purchase events'}
               {activeTab === 'settings' && 'Configure global application behavior'}
             </p>
           </div>
@@ -99,6 +106,11 @@ function App() {
           {mountedTabs.users && (
             <div style={{ display: activeTab === 'users' ? 'block' : 'none', height: '100%' }}>
               <UsersPage />
+            </div>
+          )}
+          {mountedTabs.webhooks && (
+            <div style={{ display: activeTab === 'webhooks' ? 'block' : 'none', height: '100%' }}>
+              <IapWebhooksPage />
             </div>
           )}
           {mountedTabs.settings && (
