@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
-import { DollarSign, TrendingUp, ShoppingCart, Activity, ShieldCheck, Beaker } from 'lucide-react';
+import { DollarSign, TrendingUp, ShoppingCart, Activity, ShieldCheck, Beaker, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
@@ -44,21 +44,31 @@ export const RevenuePage: React.FC = () => {
                     <p className="text-blue-100 opacity-90 text-sm">{t('revenue.subtitle')}</p>
                 </div>
                 
-                {/* Environment Switcher */}
-                <div className="flex items-center bg-white/10 rounded-full p-1 backdrop-blur-md">
+                {/* Environment Switcher & Refresh Button */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-white/10 rounded-full p-1 backdrop-blur-md">
+                        <button 
+                            onClick={() => setEnvironment('production')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'production' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
+                        >
+                            <ShieldCheck className="w-4 h-4" />
+                            Production
+                        </button>
+                        <button 
+                            onClick={() => setEnvironment('sandbox')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'sandbox' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
+                        >
+                            <Beaker className="w-4 h-4" />
+                            Sandbox
+                        </button>
+                    </div>
                     <button 
-                        onClick={() => setEnvironment('production')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'production' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
+                        onClick={() => fetchRevenue()}
+                        disabled={isLoadingRevenue}
+                        className={`p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all ${isLoadingRevenue ? 'animate-spin opacity-50' : ''}`}
+                        title="Tải lại dữ liệu"
                     >
-                        <ShieldCheck className="w-4 h-4" />
-                        Production
-                    </button>
-                    <button 
-                        onClick={() => setEnvironment('sandbox')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'sandbox' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
-                    >
-                        <Beaker className="w-4 h-4" />
-                        Sandbox
+                        <RefreshCw className="w-5 h-5 text-white" />
                     </button>
                 </div>
             </div>
