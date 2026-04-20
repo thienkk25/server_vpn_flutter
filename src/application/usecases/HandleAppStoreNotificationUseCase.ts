@@ -35,18 +35,18 @@ export class HandleAppStoreNotificationUseCase {
 
     let transactionInfo: any = data.signedTransactionInfo || {};
     let renewalInfo: any = data.signedRenewalInfo || {};
-    
+
     // Note: since we used verifyAndDecodeNotification from @apple library, 
     // signedTransactionInfo and signedRenewalInfo inside data SHOULD already be objects if the library decoded them automatically (if we use the V2 Notification parsing properly).
     // Actually as per Apple's AppStoreServerLibrary for JS: it decodes it for you.
     // The library returns a decoded NotificationV2DecodedPayload type where data.signedTransactionInfo is decoded!
-    
+
     const originalTransactionId = transactionInfo.originalTransactionId;
     if (!originalTransactionId) return;
 
     if (!VALID_PRODUCT_IDS.includes(transactionInfo.productId)) {
-       console.log(`[HandleAppStoreNotificationUseCase] Ignoring webhook. Product ID not tracked: ${transactionInfo.productId}`);
-       return;
+      console.log(`[HandleAppStoreNotificationUseCase] Ignoring webhook. Product ID not tracked: ${transactionInfo.productId}`);
+      return;
     }
 
     if (!db) throw new Error('DB not initialized');
@@ -119,7 +119,25 @@ export class HandleAppStoreNotificationUseCase {
     }
 
     const batch = db.batch();
-    batch.set(subRef, updateData, { merge: true });
+
+    // Cross-check to prevent older webhooks (e.g., Apple sending an older segment's webhook after an upgrade) from downgrading the user
+    let skipSubscriptionUpdate = false;
+    const subDoc = await subRef.get();
+    if (subDoc.exists) {
+      const currentData = subDoc.data()!;
+      const currentExpiresAt = currentData.expiresAt || 0;
+
+      // If the webhook's term expires BEFORE our known active term (and it's not a lifetime product refund where expiresAt is 0),
+      // it means this webhook is for an older past segment. We should not downgrade their premium.
+      if (expiresAt > 0 && currentExpiresAt > expiresAt) {
+        skipSubscriptionUpdate = true;
+        console.log(`[IAP] Skipping subscription update: Webhook's expiresAt (${expiresAt}) is older than DB's expiresAt (${currentExpiresAt}).`);
+      }
+    }
+
+    if (!skipSubscriptionUpdate) {
+      batch.set(subRef, updateData, { merge: true });
+    }
 
     const txRef = revenueTransactions.doc(transactionInfo.transactionId || notificationId);
     batch.set(txRef, {
@@ -136,22 +154,24 @@ export class HandleAppStoreNotificationUseCase {
     });
 
     // Handle users sharing the subscription
-    const sharingUsers = await users.where('subscriptionId', '==', originalTransactionId).get();
-    
-    if (isActive) {
-      for (const uDoc of sharingUsers.docs) {
-        batch.set(uDoc.ref, { 
-          isPremium: true,
-          activeProductId: transactionInfo.productId
-        }, { merge: true });
-      }
-    } else {
-      for (const uDoc of sharingUsers.docs) {
-        if (uDoc.data().subscriptionId === originalTransactionId) {
-          batch.set(uDoc.ref, { 
-            isPremium: false,
-            activeProductId: null
+    if (!skipSubscriptionUpdate) {
+      const sharingUsers = await users.where('subscriptionId', '==', originalTransactionId).get();
+
+      if (isActive) {
+        for (const uDoc of sharingUsers.docs) {
+          batch.set(uDoc.ref, {
+            isPremium: true,
+            activeProductId: transactionInfo.productId
           }, { merge: true });
+        }
+      } else {
+        for (const uDoc of sharingUsers.docs) {
+          if (uDoc.data().subscriptionId === originalTransactionId) {
+            batch.set(uDoc.ref, {
+              isPremium: false,
+              activeProductId: null
+            }, { merge: true });
+          }
         }
       }
     }
