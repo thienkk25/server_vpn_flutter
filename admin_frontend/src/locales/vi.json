@@ -7,7 +7,15 @@
     "settings": "Cài Đặt",
     "revenue": "Doanh Thu",
     "apiKey": "Khóa API (Dev)",
-    "save": "Lưu"
+    "save": "Lưu",
+    "logout": "Đăng Xuất"
+  },
+  "login": {
+    "title": "Cổng Quản Trị",
+    "subtitle": "Vui lòng xác thực bằng Khóa API được cung cấp",
+    "placeholder": "Nhập khóa bí mật của bạn...",
+    "verifying": "Đang xác thực...",
+    "accessBtn": "Truy Cập Hệ Thống"
   },
   "header": {
     "revenue": "Thống Kê Doanh Thu",

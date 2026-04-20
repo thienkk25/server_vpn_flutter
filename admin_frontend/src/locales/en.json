@@ -7,7 +7,15 @@
     "settings": "Settings",
     "revenue": "Revenue",
     "apiKey": "API Key (Dev)",
-    "save": "Save"
+    "save": "Save",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Admin Portal",
+    "subtitle": "Please authenticate with your provider API key",
+    "placeholder": "Enter your secret key...",
+    "verifying": "Verifying...",
+    "accessBtn": "Access Dashboard"
   },
   "header": {
     "revenue": "Revenue Dashboard",

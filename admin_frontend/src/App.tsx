@@ -5,14 +5,16 @@ import UsersPage from './presentation/pages/UsersPage';
 import SettingsPage from './presentation/pages/SettingsPage';
 import IapWebhooksPage from './presentation/pages/IapWebhooksPage';
 import { RevenuePage } from './presentation/pages/RevenuePage';
-import { LayoutDashboard, Users, Settings, KeyRound, BellRing, DollarSign, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, KeyRound, BellRing, DollarSign, Globe, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'revenue' | 'servers' | 'users' | 'settings' | 'webhooks'>('revenue');
   const [mountedTabs, setMountedTabs] = useState({ revenue: true, servers: false, users: false, settings: false, webhooks: false });
   const { apiKey, setApiKey } = useAdminStore();
-  const [tempKey, setTempKey] = useState(apiKey);
+  const [loginKey, setLoginKey] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { t, i18n } = useTranslation();
 
   const toggleLanguage = () => {
@@ -27,9 +29,82 @@ function App() {
     }
   };
 
-  const handleSaveKey = () => {
-    setApiKey(tempKey);
+  const handleLogout = () => {
+    setApiKey('');
+    setLoginKey('');
+    setErrorMsg('');
   };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginKey.trim()) return;
+
+    setIsLoggingIn(true);
+    setErrorMsg('');
+    try {
+      // Xác thực thử bằng cách gọi nhẹ 1 API với key truyền trực tiếp
+      const response = await fetch('/api/admin/settings', {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': loginKey
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Key không hợp lệ / Invalid API Key');
+      }
+
+      setApiKey(loginKey);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Verification failed');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  if (!apiKey) {
+    return (
+       <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', height: '100vh', width: '100vw' }}>
+          <div className="glass-panel" style={{ margin: 'auto', width: '100%', maxWidth: '400px', padding: '40px 30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, var(--accent-color), #a29bfe)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 10px 25px var(--accent-glow)' }}>
+                      <KeyRound size={32} color="white" />
+                  </div>
+                  <h1 style={{ fontSize: '2rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>{t('login.title')}</h1>
+                  <p className="text-muted" style={{ fontSize: '0.9rem' }}>{t('login.subtitle')}</p>
+              </div>
+              
+              <form onSubmit={handleLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                      <div style={{ position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                              <KeyRound size={20} className="text-muted" />
+                          </div>
+                          <input
+                              type="password"
+                              value={loginKey}
+                              onChange={(e) => { setLoginKey(e.target.value); setErrorMsg(''); }}
+                              className="glass-input"
+                              style={{ paddingLeft: '48px', paddingRight: '16px', height: '50px' }}
+                              placeholder={t('login.placeholder')}
+                          />
+                      </div>
+                      {errorMsg && <p className="text-danger" style={{ marginTop: '10px', fontSize: '0.85rem' }}>{errorMsg}</p>}
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    className="primary-btn glow-effect"
+                    disabled={isLoggingIn || !loginKey} 
+                    style={{ width: '100%', height: '50px', fontSize: '1rem', marginTop: '10px', opacity: (isLoggingIn || !loginKey) ? 0.7 : 1 }}
+                  >
+                      {isLoggingIn ? t('login.verifying') : t('login.accessBtn')}
+                  </button>
+              </form>
+          </div>
+       </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -39,7 +114,7 @@ function App() {
           <span className="logo-icon">🚀</span>
           <h1>{t('sidebar.title')}</h1>
         </div>
-        
+
         <nav className="nav-menu">
           <a href="#" className={`nav-item ${activeTab === 'revenue' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('revenue'); }}>
             <DollarSign size={20} />
@@ -64,29 +139,13 @@ function App() {
         </nav>
 
         <div className="api-key-section">
-          <label htmlFor="apiKey" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <KeyRound size={16} /> {t('sidebar.apiKey')}
-          </label>
-          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-            <input 
-              type="password" 
-              id="apiKey" 
-              placeholder="Enter API Key" 
-              className="glass-input" 
-              value={tempKey}
-              onChange={(e) => setTempKey(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
-              style={{ width: '100%' }}
-            />
-            <button 
-              className="primary-btn glow-effect" 
-              onClick={handleSaveKey}
-              disabled={tempKey === apiKey}
-              style={{ padding: '0 12px', fontSize: '0.85em', opacity: tempKey === apiKey ? 0.5 : 1 }}
-            >
-              {t('sidebar.save')}
-            </button>
-          </div>
+          <button
+            className="primary-btn glow-effect"
+            onClick={handleLogout}
+            style={{ width: '100%', padding: '10px', fontSize: '0.9em', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+          >
+            <LogOut size={16} /> {t('sidebar.logout') || 'Logout'}
+          </button>
         </div>
       </aside>
 
@@ -109,16 +168,16 @@ function App() {
               {activeTab === 'settings' && t('header.settingsDesc')}
             </p>
           </div>
-          
+
           <div className="lang-switcher">
-             <button 
-                onClick={toggleLanguage} 
-                className="glass-input" 
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 16px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
-             >
-                <Globe size={18} />
-                <span style={{ fontWeight: 'bold' }}>{i18n.language.toUpperCase()}</span>
-             </button>
+            <button
+              onClick={toggleLanguage}
+              className="glass-input"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 16px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              <Globe size={18} />
+              <span style={{ fontWeight: 'bold' }}>{i18n.language.toUpperCase()}</span>
+            </button>
           </div>
         </header>
 
