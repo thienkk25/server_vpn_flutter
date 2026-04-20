@@ -17,50 +17,65 @@ export class AdminRevenueController {
         .limit(100)
         .get();
 
-      const transactions = txSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const transactions: any[] = txSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // Ideally, over a huge dataset, you'd aggregate this on write rather than read.
       // But for a simple VPN app, fetching limited recent history and performing simple queries is adequate.
       
       const allTxSnapshot = await db.collection('revenue_transactions').get();
-      const allTransactions = allTxSnapshot.docs.map(doc => doc.data());
+      const allTransactions: any[] = allTxSnapshot.docs.map(doc => doc.data());
 
-      let totalRevenue = 0;
-      let monthlyRevenue = 0;
-      let salesCount = 0;
-      const productStats: Record<string, number> = {};
+      const createEnvStats = () => ({
+        totalRevenue: 0,
+        monthlyRevenue: 0,
+        salesCount: 0,
+        productStats: {} as Record<string, number>,
+        recentTransactions: [] as any[],
+        topProducts: [] as any[],
+      });
+
+      const stats = {
+        Production: createEnvStats(),
+        Sandbox: createEnvStats(),
+      };
+
+      for (const tx of transactions) {
+        const env = tx.environment === 'Sandbox' ? 'Sandbox' : 'Production';
+        stats[env].recentTransactions.push(tx);
+      }
 
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
       for (const tx of allTransactions) {
-        // Only count Production transactions for precise real revenue (But we'll include all for total visibility at first)
-        // If you want strictly production: if (tx.environment !== 'Production') continue;
+        const env = tx.environment === 'Sandbox' ? 'Sandbox' : 'Production';
+        const target = stats[env];
 
-        if (tx.amount) {
-          totalRevenue += tx.amount;
-          salesCount++;
+        if (tx.amount !== undefined) {
+          target.totalRevenue += tx.amount;
+          target.salesCount++;
 
           if (tx.timestamp >= startOfMonth) {
-            monthlyRevenue += tx.amount;
+            target.monthlyRevenue += tx.amount;
           }
 
           if (tx.amount > 0) {
-            productStats[tx.productId] = (productStats[tx.productId] || 0) + tx.amount;
+            target.productStats[tx.productId] = (target.productStats[tx.productId] || 0) + tx.amount;
           }
         }
       }
 
-      const topProducts = Object.entries(productStats)
+      stats.Production.topProducts = Object.entries(stats.Production.productStats)
+        .map(([productId, revenue]) => ({ productId, revenue }))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      stats.Sandbox.topProducts = Object.entries(stats.Sandbox.productStats)
         .map(([productId, revenue]) => ({ productId, revenue }))
         .sort((a, b) => b.revenue - a.revenue);
 
       res.status(200).json({
-        totalRevenue,
-        monthlyRevenue,
-        salesCount,
-        topProducts,
-        recentTransactions: transactions,
+        production: stats.Production,
+        sandbox: stats.Sandbox
       });
 
     } catch (error: any) {

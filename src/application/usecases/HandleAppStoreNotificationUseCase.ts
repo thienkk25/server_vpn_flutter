@@ -84,11 +84,21 @@ export class HandleAppStoreNotificationUseCase {
     // Revenue Tracking
     let amount = 0;
     if (type === 'SUBSCRIBED' || type === 'DID_RENEW' || type === 'INTERACTIVE_RENEWAL' || type === 'INITIAL_BUY') {
-      const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
-      amount = getPriceForProduct(transactionInfo.productId);
+      // transactionInfo.offerType indicates an Introductory Offer (1), Promo Offer (2), or Offer Code (3).
+      // Usually, in this VPN app, promo codes/trials are free ('promo_test_free_3n').
+      if (transactionInfo.offerType) {
+        amount = 0;
+      } else {
+        const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
+        amount = getPriceForProduct(transactionInfo.productId);
+      }
     } else if (type === 'REFUND') {
-      const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
-      amount = -getPriceForProduct(transactionInfo.productId);
+      if (transactionInfo.offerType) {
+        amount = 0;
+      } else {
+        const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
+        amount = -getPriceForProduct(transactionInfo.productId);
+      }
     }
 
     // Some purchases (like lifetimes) or webhooks return epochs

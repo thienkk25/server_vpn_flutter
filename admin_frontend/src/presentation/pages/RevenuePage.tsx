@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
-import { DollarSign, TrendingUp, ShoppingCart, Activity } from 'lucide-react';
+import { DollarSign, TrendingUp, ShoppingCart, Activity, ShieldCheck, Beaker } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
 export const RevenuePage: React.FC = () => {
     const { revenue, isLoadingRevenue, fetchRevenue } = useAdminStore();
     const { t } = useTranslation();
+    const [environment, setEnvironment] = useState<'production' | 'sandbox'>('production');
 
     useEffect(() => {
         fetchRevenue();
@@ -16,14 +17,14 @@ export const RevenuePage: React.FC = () => {
         return <div className="p-8 text-center text-gray-500">Loading...</div>;
     }
 
-    if (!revenue) {
+    if (!revenue || (!revenue.production && !revenue.sandbox)) {
         return <div className="p-8 text-center text-gray-500">{t('revenue.noData')}</div>;
     }
 
-    // Biểu đồ tĩnh mô phỏng dữ liệu (thực tế backend có thể trả chart data)
-    // Để tối giản, tôi giả lập data cho chart từ history
+    const displayRevenue = revenue[environment];
+
     const chartData = [
-        ...revenue.recentTransactions.reduce((acc: any, tx: any) => {
+        ...displayRevenue.recentTransactions.reduce((acc: any, tx: any) => {
             const date = new Date(tx.timestamp).toLocaleDateString();
             const existing = acc.find((item: any) => item.date === date);
             if (existing) {
@@ -37,13 +38,28 @@ export const RevenuePage: React.FC = () => {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
-            <div className="flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-lg text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-lg text-white gap-4">
                 <div>
                     <h1 className="text-3xl font-bold font-display tracking-tight text-white mb-2">{t('revenue.title')}</h1>
                     <p className="text-blue-100 opacity-90 text-sm">{t('revenue.subtitle')}</p>
                 </div>
-                <div className="bg-white/10 p-3 rounded-full backdrop-blur-md">
-                    <DollarSign className="w-8 h-8 text-white" />
+                
+                {/* Environment Switcher */}
+                <div className="flex items-center bg-white/10 rounded-full p-1 backdrop-blur-md">
+                    <button 
+                        onClick={() => setEnvironment('production')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'production' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
+                    >
+                        <ShieldCheck className="w-4 h-4" />
+                        Production
+                    </button>
+                    <button 
+                        onClick={() => setEnvironment('sandbox')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${environment === 'sandbox' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'}`}
+                    >
+                        <Beaker className="w-4 h-4" />
+                        Sandbox
+                    </button>
                 </div>
             </div>
 
@@ -57,7 +73,7 @@ export const RevenuePage: React.FC = () => {
                     </div>
                     <h3 className="text-gray-500 text-sm font-medium z-10">{t('revenue.totalRevenue')}</h3>
                     <p className="text-4xl font-bold tracking-tight mt-2 text-gray-900 z-10">
-                        ${revenue.totalRevenue.toFixed(2)}
+                        ${displayRevenue.totalRevenue.toFixed(2)}
                     </p>
                 </div>
 
@@ -70,7 +86,7 @@ export const RevenuePage: React.FC = () => {
                     </div>
                     <h3 className="text-gray-500 text-sm font-medium z-10">{t('revenue.monthlyRevenue')}</h3>
                     <p className="text-4xl font-bold tracking-tight mt-2 text-gray-900 z-10">
-                        ${revenue.monthlyRevenue.toFixed(2)}
+                        ${displayRevenue.monthlyRevenue.toFixed(2)}
                     </p>
                 </div>
 
@@ -83,7 +99,7 @@ export const RevenuePage: React.FC = () => {
                     </div>
                     <h3 className="text-gray-500 text-sm font-medium z-10">{t('revenue.totalTransactions')}</h3>
                     <p className="text-4xl font-bold tracking-tight mt-2 text-gray-900 z-10">
-                        {t('revenue.salesCount', { count: revenue.salesCount })}
+                        {t('revenue.salesCount', { count: displayRevenue.salesCount })}
                     </p>
                 </div>
             </div>
@@ -127,7 +143,7 @@ export const RevenuePage: React.FC = () => {
                     </h3>
                     <div className="flex-1 overflow-y-auto">
                         <div className="space-y-4 pr-2">
-                            {revenue.topProducts.map((p: any, index: number) => (
+                            {displayRevenue.topProducts.map((p: any, index: number) => (
                                 <div key={p.productId} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${index === 0 ? 'bg-amber-100 text-amber-600' : index === 1 ? 'bg-gray-100 text-gray-600' : index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-blue-500'}`}>
@@ -140,7 +156,7 @@ export const RevenuePage: React.FC = () => {
                                     <div className="font-semibold text-gray-900">${p.revenue.toFixed(2)}</div>
                                 </div>
                             ))}
-                            {revenue.topProducts.length === 0 && (
+                            {displayRevenue.topProducts.length === 0 && (
                                 <p className="text-center text-sm text-gray-400 py-4">{t('revenue.noProducts')}</p>
                             )}
                         </div>
@@ -165,7 +181,7 @@ export const RevenuePage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100 relative">
-                            {revenue.recentTransactions.slice(0, 10).map((tx: any) => (
+                            {displayRevenue.recentTransactions.slice(0, 10).map((tx: any) => (
                                 <tr key={tx.id || Math.random()} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {new Date(tx.timestamp).toLocaleString()}
@@ -194,7 +210,7 @@ export const RevenuePage: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {revenue.recentTransactions.length === 0 && (
+                            {displayRevenue.recentTransactions.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400 bg-gray-50">
                                         {t('revenue.noTransactions')}
