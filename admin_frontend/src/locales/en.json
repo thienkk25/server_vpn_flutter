@@ -46,6 +46,7 @@
     "amount": "Amount",
     "success": "Success",
     "refund": "Refund",
+    "trial": "Trial / Promo",
     "noData": "No revenue data yet, waiting for new transactions!",
     "noChartData": "Not enough data to draw chart",
     "noProducts": "No product sales logged yet",

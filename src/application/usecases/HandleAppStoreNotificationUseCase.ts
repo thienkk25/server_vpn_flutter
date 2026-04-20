@@ -121,20 +121,19 @@ export class HandleAppStoreNotificationUseCase {
     const batch = db.batch();
     batch.set(subRef, updateData, { merge: true });
 
-    if (amount !== 0) {
-      const txRef = revenueTransactions.doc(transactionInfo.transactionId || notificationId);
-      batch.set(txRef, {
-        notificationId,
-        originalTransactionId,
-        transactionId: transactionInfo.transactionId || null,
-        productId: transactionInfo.productId,
-        amount,
-        currency: 'USD',
-        environment: data.environment,
-        type,
-        timestamp: Date.now()
-      });
-    }
+    const txRef = revenueTransactions.doc(transactionInfo.transactionId || notificationId);
+    batch.set(txRef, {
+      notificationId,
+      originalTransactionId,
+      transactionId: transactionInfo.transactionId || null,
+      productId: transactionInfo.productId,
+      amount,
+      currency: 'USD',
+      environment: data.environment,
+      type,
+      offerType: transactionInfo.offerType || null,
+      timestamp: Date.now()
+    });
 
     // Handle users sharing the subscription
     const sharingUsers = await users.where('subscriptionId', '==', originalTransactionId).get();

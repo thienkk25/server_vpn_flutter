@@ -46,6 +46,7 @@
     "amount": "Số Tiền",
     "success": "Thành Công",
     "refund": "Hoàn Tiền",
+    "trial": "Dùng Thử / Mã KM",
     "noData": "Chưa có dữ liệu doanh thu, vui lòng chờ giao dịch mới!",
     "noChartData": "Chưa có đủ dữ liệu để vẽ biểu đồ diễn biến",
     "noProducts": "Chưa có giao dịch mua gói dịch vụ nào",

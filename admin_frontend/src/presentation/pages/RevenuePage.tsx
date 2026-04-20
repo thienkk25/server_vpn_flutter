@@ -235,12 +235,14 @@ export const RevenuePage: React.FC = () => {
                                     <td>
                                         {tx.amount > 0 ? (
                                             <span className="status-badge active">{t('revenue.success', 'Success')}</span>
+                                        ) : tx.amount === 0 ? (
+                                            <span className="status-badge" style={{ background: 'rgba(255, 165, 2, 0.1)', color: 'var(--warning-color)', border: '1px solid rgba(255, 165, 2, 0.3)' }}>{t('revenue.trial', 'Trial/Promo')}</span>
                                         ) : (
                                             <span className="status-badge offline">{t('revenue.refund', 'Refunded')}</span>
                                         )}
                                     </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 'bold', color: tx.amount > 0 ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                                        {tx.amount > 0 ? '+' : ''}${tx.amount.toFixed(2)}
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold', color: tx.amount > 0 ? 'var(--success-color)' : tx.amount === 0 ? 'var(--warning-color)' : 'var(--danger-color)' }}>
+                                        {tx.amount > 0 ? '+' : tx.amount < 0 ? '-' : ''}${Math.abs(tx.amount).toFixed(2)}
                                     </td>
                                 </tr>
                             ))}
