@@ -21,8 +21,8 @@ export class AppleServerNotificationService {
         fs.writeFileSync(this.rootCertPath, rootCert);
       }
 
-      const bundleId = process.env.APP_BUNDLE_ID || 'com.example.vpn';
-      const appAppleId = process.env.APP_APPLE_ID ? parseInt(process.env.APP_APPLE_ID) : 123456789;
+      const bundleId = process.env.APP_BUNDLE_ID!;
+      const appAppleId = parseInt(process.env.APP_APPLE_ID!);
       // You should switch to PRODUCTION based on .env
       const environment = process.env.NODE_ENV === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
 

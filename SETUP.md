@@ -8,6 +8,9 @@ Tài liệu này hướng dẫn chi tiết cách cấu hình biến môi trườ
 Hãy tạo một file tên là `.env` ở thư mục gốc của project (ngang hàng với `package.json`), sao chép từ `.env.example` và thiết lập các giá trị.
 
 ```env
+# Môi trường chạy server (development hoặc production)
+# LƯU Ý: Phải set là "production" khi đưa lên host thật để thư viện Apple xác minh hóa đơn bằng môi trường App Store chuẩn.
+NODE_ENV=development
 FIREBASE_SERVICE_ACCOUNT_PATH=<Base64_Của_File_Firebase_JSON>
 ADMIN_KEY=<Secret_Key_Để_App_Gọi_API_Quản_Trị>
 APP_BUNDLE_ID=<com.yourcompany.vpnapp>
