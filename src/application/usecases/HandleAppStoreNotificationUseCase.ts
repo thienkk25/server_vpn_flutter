@@ -78,7 +78,18 @@ export class HandleAppStoreNotificationUseCase {
 
     const subscriptions = db.collection('subscriptions');
     const users = db.collection('users');
+    const revenueTransactions = db.collection('revenue_transactions');
     const subRef = subscriptions.doc(originalTransactionId);
+
+    // Revenue Tracking
+    let amount = 0;
+    if (type === 'SUBSCRIBED' || type === 'DID_RENEW' || type === 'INTERACTIVE_RENEWAL' || type === 'INITIAL_BUY') {
+      const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
+      amount = getPriceForProduct(transactionInfo.productId);
+    } else if (type === 'REFUND') {
+      const { getPriceForProduct } = require('../../domain/constants/ProductPrices');
+      amount = -getPriceForProduct(transactionInfo.productId);
+    }
 
     // Some purchases (like lifetimes) or webhooks return epochs
     const expiresAt = transactionInfo.expiresDate || 0;
@@ -99,6 +110,21 @@ export class HandleAppStoreNotificationUseCase {
 
     const batch = db.batch();
     batch.set(subRef, updateData, { merge: true });
+
+    if (amount !== 0) {
+      const txRef = revenueTransactions.doc(transactionInfo.transactionId || notificationId);
+      batch.set(txRef, {
+        notificationId,
+        originalTransactionId,
+        transactionId: transactionInfo.transactionId || null,
+        productId: transactionInfo.productId,
+        amount,
+        currency: 'USD',
+        environment: data.environment,
+        type,
+        timestamp: Date.now()
+      });
+    }
 
     // Handle users sharing the subscription
     const sharingUsers = await users.where('subscriptionId', '==', originalTransactionId).get();

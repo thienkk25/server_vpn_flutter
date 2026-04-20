@@ -1,0 +1,46 @@
+{
+  "sidebar": {
+    "title": "VPN Admin",
+    "servers": "Servers",
+    "users": "Users",
+    "webhooks": "IAP Webhooks",
+    "settings": "Settings",
+    "revenue": "Revenue",
+    "apiKey": "API Key (Dev)",
+    "save": "Save"
+  },
+  "header": {
+    "revenue": "Revenue Dashboard",
+    "revenueDesc": "Monitor and track your real-time earnings",
+    "servers": "Server Management",
+    "serversDesc": "Monitor and configure your VPN network nodes",
+    "users": "User Management",
+    "usersDesc": "Monitor user accounts and subscriptions",
+    "webhooks": "App Store Webhooks",
+    "webhooksDesc": "Monitor real-time Apple In-App Purchase events",
+    "settings": "App Settings",
+    "settingsDesc": "Configure global application behavior"
+  },
+  "revenue": {
+    "title": "Revenue Analytics",
+    "subtitle": "Monitor real-time IAP cashflow",
+    "totalRevenue": "Total Revenue",
+    "monthlyRevenue": "Monthly Revenue",
+    "totalTransactions": "Total Transactions",
+    "salesCount": "{{count}} Sales",
+    "growthChart": "Growth Chart",
+    "topProducts": "Top Selling Products",
+    "recentTransactions": "Recent Transactions",
+    "date": "Date",
+    "transactionId": "Transaction ID",
+    "product": "Product",
+    "status": "Status",
+    "amount": "Amount",
+    "success": "Success",
+    "refund": "Refund",
+    "noData": "No revenue data yet, waiting for new transactions!",
+    "noChartData": "Not enough data to draw chart",
+    "noProducts": "No product sales logged yet",
+    "noTransactions": "No historical transactions recorded."
+  }
+}

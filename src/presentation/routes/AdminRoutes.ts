@@ -49,12 +49,14 @@ router.put('/users/:id', adminUserController.updateUser);
 router.delete('/users/:id', adminUserController.deleteUser);
 
 import { AdminIapController } from '../controllers/AdminIapController';
+import { AdminRevenueController } from '../controllers/AdminRevenueController';
 
 const adminIapController = new AdminIapController();
-
+const adminRevenueController = new AdminRevenueController();
 router.get('/settings', adminSettingsController.getSettings);
 router.put('/settings', adminSettingsController.updateSettings);
 
 router.get('/iap/webhooks', adminIapController.getWebhooks);
+router.get('/revenue', adminRevenueController.getRevenueStats);
 
 export default router;

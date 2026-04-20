@@ -1,0 +1,46 @@
+{
+  "sidebar": {
+    "title": "Quản Trị VPN",
+    "servers": "Máy Chủ",
+    "users": "Người Dùng",
+    "webhooks": "IAP Webhooks",
+    "settings": "Cài Đặt",
+    "revenue": "Doanh Thu",
+    "apiKey": "Khóa API (Dev)",
+    "save": "Lưu"
+  },
+  "header": {
+    "revenue": "Thống Kê Doanh Thu",
+    "revenueDesc": "Theo dõi trực tiếp doanh thu từ dòng tiền IAP Apple",
+    "servers": "Quản Lý Máy Chủ",
+    "serversDesc": "Giám sát và cấu hình các điểm mạng VPN của bạn",
+    "users": "Quản Lý Người Dùng",
+    "usersDesc": "Giám sát tài khoản và gói đăng ký của người dùng",
+    "webhooks": "App Store Webhooks",
+    "webhooksDesc": "Giám sát sự kiện thanh toán in-app trực tiếp từ Apple",
+    "settings": "Cài Đặt Ứng Dụng",
+    "settingsDesc": "Cấu hình hành vi chung của hệ thống"
+  },
+  "revenue": {
+    "title": "Thống Kê Doanh Thu",
+    "subtitle": "Theo dõi dòng tiền mua sắm trực tiếp",
+    "totalRevenue": "Tổng Doanh Thu",
+    "monthlyRevenue": "Doanh Thu Tháng Này",
+    "totalTransactions": "Tổng Giao Dịch",
+    "salesCount": "{{count}} Lượt",
+    "growthChart": "Biểu Đồ Tăng Trưởng",
+    "topProducts": "Gói Bán Chạy Nhất",
+    "recentTransactions": "Lịch sử Giao Dịch Gần Đây",
+    "date": "Thời Gian",
+    "transactionId": "Mã Giao Dịch",
+    "product": "Sản Phẩm",
+    "status": "Trạng Thái",
+    "amount": "Số Tiền",
+    "success": "Thành Công",
+    "refund": "Hoàn Tiền",
+    "noData": "Chưa có dữ liệu doanh thu, vui lòng chờ giao dịch mới!",
+    "noChartData": "Chưa có đủ dữ liệu để vẽ biểu đồ diễn biến",
+    "noProducts": "Chưa có giao dịch mua gói dịch vụ nào",
+    "noTransactions": "Chưa có giao dịch lịch sử nào được ghi nhận."
+  }
+}

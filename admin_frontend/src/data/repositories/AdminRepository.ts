@@ -49,6 +49,10 @@ export class AdminRepository {
     async getIapWebhooks(): Promise<any[]> {
         return await apiClient.get<any[]>('/iap/webhooks');
     }
+
+    async getRevenue(): Promise<any> {
+        return await apiClient.get<any>('/revenue');
+    }
 }
 
 export const adminRepository = new AdminRepository();

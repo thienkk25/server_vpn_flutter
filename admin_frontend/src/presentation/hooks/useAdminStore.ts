@@ -32,6 +32,11 @@ interface AdminState {
     webhooks: any[];
     isLoadingWebhooks: boolean;
     fetchWebhooks: () => Promise<void>;
+
+    // Revenue
+    revenue: any;
+    isLoadingRevenue: boolean;
+    fetchRevenue: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -162,6 +167,21 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             throw error;
         } finally {
             set({ isLoadingWebhooks: false });
+        }
+    },
+
+    revenue: null,
+    isLoadingRevenue: false,
+    fetchRevenue: async () => {
+        set({ isLoadingRevenue: true });
+        try {
+            const revenue = await adminRepository.getRevenue();
+            set({ revenue });
+        } catch (error) {
+            console.error('Failed to fetch revenue:', error);
+            throw error;
+        } finally {
+            set({ isLoadingRevenue: false });
         }
     }
 }));
