@@ -1,6 +1,8 @@
 import { AppleIapService } from '../../infrastructure/services/AppleIapService';
 import { ISubscriptionRepository } from '../../domain/repositories/ISubscriptionRepository';
 import { UserSubscriptionEntity } from '../../domain/entities/UserSubscriptionEntity';
+import { db } from '../../infrastructure/config/firebase';
+import { getPriceForProduct } from '../../domain/constants/ProductPrices';
 
 export class VerifyIapReceiptUseCase {
   constructor(
@@ -64,6 +66,32 @@ export class VerifyIapReceiptUseCase {
 
     // 6. save subscription and update user are handled inside saveSubscription
     await this.subscriptionRepository.saveSubscription(subscriptionData);
+
+    // 7. Save to revenue_transactions to support local sandbox tests and missing webhooks
+    if (db && transaction.transactionId) {
+       let amount = getPriceForProduct(transaction.productId);
+       if (transaction.offerType) {
+         amount = 0;
+       }
+       
+       const txRef = db.collection('revenue_transactions').doc(transaction.transactionId);
+       
+       const txData = {
+         notificationId: 'verify_api_fallback',
+         originalTransactionId: transaction.originalTransactionId,
+         transactionId: transaction.transactionId,
+         productId: transaction.productId,
+         amount,
+         currency: 'USD',
+         environment: transaction.environment || 'Production',
+         type: transaction.type || 'SUBSCRIBED',
+         offerType: transaction.offerType || null,
+         timestamp: transaction.purchaseDate || Date.now()
+       };
+
+       // Use merge: true so if the webhook handles it as well, it just silently overwrites/merges
+       await txRef.set(txData, { merge: true });
+    }
 
     return subscriptionData;
   }
