@@ -5,7 +5,7 @@ import { ServerFirebaseRepository } from '../../infrastructure/repositories/Serv
 
 import { SubscriptionFirebaseRepository } from '../../infrastructure/repositories/SubscriptionFirebaseRepository';
 import { GetPrivateServerConfigUseCase } from '../../application/usecases/GetPrivateServerConfigUseCase';
-import { authMiddleware } from '../middlewares/AuthMiddleware';
+import { apiKeyMiddleware } from '../middlewares/ApiKeyMiddleware';
 
 const router = Router();
 
@@ -14,7 +14,7 @@ const serverRepository = new ServerFirebaseRepository();
 const subscriptionRepository = new SubscriptionFirebaseRepository();
 
 const getServersUseCase = new GetServersUseCase(serverRepository);
-const getPrivateServerConfigUseCase = new GetPrivateServerConfigUseCase(serverRepository, subscriptionRepository);
+const getPrivateServerConfigUseCase = new GetPrivateServerConfigUseCase(serverRepository);
 
 const serverController = new ServerController(
   getServersUseCase,
@@ -23,6 +23,6 @@ const serverController = new ServerController(
 
 // Routes
 router.get('/', serverController.getServers);
-router.get('/:id/config', authMiddleware, serverController.getPrivateServerConfig);
+router.get('/:id/config', apiKeyMiddleware, serverController.getPrivateServerConfig);
 
 export default router;

@@ -28,15 +28,9 @@ export class ServerController {
         res.status(500).json({ success: false, message: 'Not configured.' });
         return;
       }
-      const userId = req.user?.uid;
       const serverId = req.params.id;
 
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Unauthorized' });
-        return;
-      }
-
-      const config = await this.getPrivateServerConfigUseCase.execute(userId, serverId);
+      const config = await this.getPrivateServerConfigUseCase.execute(serverId);
 
       res.status(200).json({
         success: true,

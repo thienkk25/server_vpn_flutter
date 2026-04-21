@@ -1,22 +1,11 @@
 import { IServerRepository } from '../../domain/repositories/IServerRepository';
-import { ISubscriptionRepository } from '../../domain/repositories/ISubscriptionRepository';
 
 export class GetPrivateServerConfigUseCase {
   constructor(
-    private serverRepository: IServerRepository,
-    private subscriptionRepository: ISubscriptionRepository
+    private serverRepository: IServerRepository
   ) {}
 
-  async execute(userId: string, serverId: string): Promise<any> {
-    const subscription = await this.subscriptionRepository.getSubscriptionByUserId(userId);
-    const now = Date.now();
-
-    if (!subscription || !subscription.isActive) {
-      throw new Error('403: Forbidden - Premium subscription required.');
-    }
-
-    // Since our DB uses string IDs but the mock may be something else, let's just get all and find. 
-    // Wait, the current IServerRepository doesn't have getServerById, let's check it.
+  async execute(serverId: string): Promise<any> {
     const servers = await this.serverRepository.getAllServers();
     const server = servers.find(s => s.id === serverId);
 
