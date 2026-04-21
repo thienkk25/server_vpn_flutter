@@ -63,7 +63,7 @@ export class AdminServerController {
 
   public importServers = async (req: Request, res: Response): Promise<void> => {
     try {
-      const serversData: Partial<ServerEntity>[] = req.body;
+      const serversData: any[] = req.body;
       if (!Array.isArray(serversData)) {
         res.status(400).json({ success: false, message: 'Invalid data format. Expected an array of servers.' });
         return;
