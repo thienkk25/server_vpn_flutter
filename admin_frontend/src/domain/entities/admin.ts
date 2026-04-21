@@ -15,17 +15,7 @@ export interface ServerEntity {
     isVip?: number;
 }
 
-export interface UserEntity {
-    uid: string;
-    email: string;
-    displayName: string;
-    creationTime: string;
-}
-
 export interface SettingsEntity {
-    maintenanceMode: boolean;
     privacyPolicyUrl: string;
     termsOfServiceUrl: string;
-    systemMessage: string;
-    flashSaleTimerSeconds?: number;
 }

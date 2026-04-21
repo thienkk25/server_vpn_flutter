@@ -3,10 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import serverRoutes from './presentation/routes/ServerRoutes';
-import iapRoutes from './presentation/routes/IapRoutes';
 import adminRoutes from './presentation/routes/AdminRoutes';
 import appSettingsRoutes from './presentation/routes/AppSettingsRoutes';
-import { startSubscriptionCronJob } from './infrastructure/cron/SubscriptionCron';
 
 dotenv.config();
 
@@ -22,17 +20,13 @@ app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 
 // Main Routes
 app.use('/api/servers', serverRoutes);
-app.use('/api/iap', iapRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/app-settings', appSettingsRoutes);
 
 // 
 app.get('/', (req: Request, res: Response) => {
-  res.status(200).send('VPN Backend Server is running');
+  res.redirect('/admin');
 });
-
-// Start Background Jobs
-startSubscriptionCronJob();
 
 // Start Server
 app.listen(port, () => {

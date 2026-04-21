@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ServerEntity, UserEntity, SettingsEntity } from '../../domain/entities/admin';
+import type { ServerEntity, SettingsEntity } from '../../domain/entities/admin';
 import { adminRepository } from '../../data/repositories/AdminRepository';
 import { apiClient } from '../../data/sources/ApiClient';
 
@@ -15,28 +15,11 @@ interface AdminState {
     deleteServer: (id: string) => Promise<void>;
     importServers: (servers: Partial<ServerEntity>[]) => Promise<void>;
 
-    // Users
-    users: UserEntity[];
-    isLoadingUsers: boolean;
-    fetchUsers: () => Promise<void>;
-    saveUser: (uid: string | null, user: Partial<UserEntity> & { password?: string }) => Promise<void>;
-    deleteUser: (uid: string) => Promise<void>;
-
     // Settings
     settings: SettingsEntity | null;
     isLoadingSettings: boolean;
     fetchSettings: () => Promise<void>;
     updateSettings: (settings: Partial<SettingsEntity>) => Promise<void>;
-
-    // Webhooks
-    webhooks: any[];
-    isLoadingWebhooks: boolean;
-    fetchWebhooks: () => Promise<void>;
-
-    // Revenue
-    revenue: any;
-    isLoadingRevenue: boolean;
-    fetchRevenue: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -92,43 +75,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         }
     },
 
-    users: [],
-    isLoadingUsers: false,
-    fetchUsers: async () => {
-        set({ isLoadingUsers: true });
-        try {
-            const users = await adminRepository.getUsers();
-            set({ users });
-        } catch (error) {
-            console.error('Failed to fetch users:', error);
-            throw error;
-        } finally {
-            set({ isLoadingUsers: false });
-        }
-    },
-    saveUser: async (uid, user) => {
-        try {
-            if (uid) {
-                await adminRepository.updateUser(uid, user);
-            } else {
-                await adminRepository.addUser(user);
-            }
-            await get().fetchUsers();
-        } catch (error) {
-            console.error('Failed to save user:', error);
-            throw error;
-        }
-    },
-    deleteUser: async (uid) => {
-        try {
-            await adminRepository.deleteUser(uid);
-            await get().fetchUsers();
-        } catch (error) {
-            console.error('Failed to delete user:', error);
-            throw error;
-        }
-    },
-
     settings: null,
     isLoadingSettings: false,
     fetchSettings: async () => {
@@ -150,38 +96,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         } catch (error) {
             console.error('Failed to update settings:', error);
             throw error;
-        }
-    },
-
-    webhooks: [],
-    isLoadingWebhooks: false,
-    fetchWebhooks: async () => {
-        set({ isLoadingWebhooks: true });
-        try {
-            const result = await adminRepository.getIapWebhooks();
-            // Assuming the backend returns { success: true, data: [...] }
-            const webhooks = ((result as any).data) || result; 
-            set({ webhooks: Array.isArray(webhooks) ? webhooks : [] });
-        } catch (error) {
-            console.error('Failed to fetch webhooks:', error);
-            throw error;
-        } finally {
-            set({ isLoadingWebhooks: false });
-        }
-    },
-
-    revenue: null,
-    isLoadingRevenue: false,
-    fetchRevenue: async () => {
-        set({ isLoadingRevenue: true });
-        try {
-            const revenue = await adminRepository.getRevenue();
-            set({ revenue });
-        } catch (error) {
-            console.error('Failed to fetch revenue:', error);
-            throw error;
-        } finally {
-            set({ isLoadingRevenue: false });
         }
     }
 }));

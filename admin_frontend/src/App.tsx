@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useAdminStore } from './presentation/hooks/useAdminStore';
 import ServersPage from './presentation/pages/ServersPage';
-import UsersPage from './presentation/pages/UsersPage';
 import SettingsPage from './presentation/pages/SettingsPage';
-import IapWebhooksPage from './presentation/pages/IapWebhooksPage';
-import { RevenuePage } from './presentation/pages/RevenuePage';
-import { LayoutDashboard, Users, Settings, KeyRound, BellRing, DollarSign, Globe, LogOut } from 'lucide-react';
+import { LayoutDashboard, Settings, KeyRound, Globe, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'revenue' | 'servers' | 'users' | 'settings' | 'webhooks'>('revenue');
-  const [mountedTabs, setMountedTabs] = useState({ revenue: true, servers: false, users: false, settings: false, webhooks: false });
+  const [activeTab, setActiveTab] = useState<'servers' | 'settings'>('servers');
+  const [mountedTabs, setMountedTabs] = useState({ servers: true, settings: false });
   const { apiKey, setApiKey } = useAdminStore();
   const [loginKey, setLoginKey] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -22,7 +19,7 @@ function App() {
     i18n.changeLanguage(newLang);
   };
 
-  const handleTabChange = (tab: 'revenue' | 'servers' | 'users' | 'settings' | 'webhooks') => {
+  const handleTabChange = (tab: 'servers' | 'settings') => {
     setActiveTab(tab);
     if (!mountedTabs[tab]) {
       setMountedTabs(prev => ({ ...prev, [tab]: true }));
@@ -116,21 +113,9 @@ function App() {
         </div>
 
         <nav className="nav-menu">
-          <a href="#" className={`nav-item ${activeTab === 'revenue' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('revenue'); }}>
-            <DollarSign size={20} />
-            {t('sidebar.revenue')}
-          </a>
           <a href="#" className={`nav-item ${activeTab === 'servers' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('servers'); }}>
             <LayoutDashboard size={20} />
             {t('sidebar.servers')}
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('users'); }}>
-            <Users size={20} />
-            {t('sidebar.users')}
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'webhooks' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('webhooks'); }}>
-            <BellRing size={20} />
-            {t('sidebar.webhooks')}
           </a>
           <a href="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('settings'); }}>
             <Settings size={20} />
@@ -154,17 +139,11 @@ function App() {
         <header className="top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="header-info">
             <h2>
-              {activeTab === 'revenue' && t('header.revenue')}
               {activeTab === 'servers' && t('header.servers')}
-              {activeTab === 'users' && t('header.users')}
-              {activeTab === 'webhooks' && t('header.webhooks')}
               {activeTab === 'settings' && t('header.settings')}
             </h2>
             <p className="subtitle">
-              {activeTab === 'revenue' && t('header.revenueDesc')}
               {activeTab === 'servers' && t('header.serversDesc')}
-              {activeTab === 'users' && t('header.usersDesc')}
-              {activeTab === 'webhooks' && t('header.webhooksDesc')}
               {activeTab === 'settings' && t('header.settingsDesc')}
             </p>
           </div>
@@ -182,24 +161,9 @@ function App() {
         </header>
 
         <div className="content-body">
-          {mountedTabs.revenue && (
-            <div style={{ display: activeTab === 'revenue' ? 'block' : 'none', height: '100%', overflow: 'auto' }}>
-              <RevenuePage />
-            </div>
-          )}
           {mountedTabs.servers && (
             <div style={{ display: activeTab === 'servers' ? 'block' : 'none', height: '100%' }}>
               <ServersPage />
-            </div>
-          )}
-          {mountedTabs.users && (
-            <div style={{ display: activeTab === 'users' ? 'block' : 'none', height: '100%' }}>
-              <UsersPage />
-            </div>
-          )}
-          {mountedTabs.webhooks && (
-            <div style={{ display: activeTab === 'webhooks' ? 'block' : 'none', height: '100%' }}>
-              <IapWebhooksPage />
             </div>
           )}
           {mountedTabs.settings && (

@@ -9,8 +9,6 @@ import {
   ImportServersUseCase
 } from '../../application/usecases/AdminServerUseCases';
 import { ServerFirebaseRepository } from '../../infrastructure/repositories/ServerFirebaseRepository';
-import { AdminUserUseCases } from '../../application/usecases/AdminUserUseCases';
-import { AdminUserController } from '../controllers/AdminUserController';
 import { AdminSettingsUseCases } from '../../application/usecases/AdminSettingsUseCases';
 import { AdminSettingsController } from '../controllers/AdminSettingsController';
 
@@ -28,9 +26,6 @@ const adminController = new AdminServerController(
   getAllUseCase, createUseCase, updateUseCase, deleteUseCase, importUseCase
 );
 
-const userUseCases = new AdminUserUseCases();
-const adminUserController = new AdminUserController(userUseCases);
-
 const settingsUseCases = new AdminSettingsUseCases();
 const adminSettingsController = new AdminSettingsController(settingsUseCases);
 
@@ -43,20 +38,7 @@ router.post('/servers/import', adminController.importServers);
 router.put('/servers/:id', adminController.updateServer);
 router.delete('/servers/:id', adminController.deleteServer);
 
-router.get('/users', adminUserController.getAllUsers);
-router.post('/users', adminUserController.createUser);
-router.put('/users/:id', adminUserController.updateUser);
-router.delete('/users/:id', adminUserController.deleteUser);
-
-import { AdminIapController } from '../controllers/AdminIapController';
-import { AdminRevenueController } from '../controllers/AdminRevenueController';
-
-const adminIapController = new AdminIapController();
-const adminRevenueController = new AdminRevenueController();
 router.get('/settings', adminSettingsController.getSettings);
 router.put('/settings', adminSettingsController.updateSettings);
-
-router.get('/iap/webhooks', adminIapController.getWebhooks);
-router.get('/revenue', adminRevenueController.getRevenueStats);
 
 export default router;

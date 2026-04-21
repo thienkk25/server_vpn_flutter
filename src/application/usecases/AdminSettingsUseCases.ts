@@ -12,16 +12,15 @@ export class AdminSettingsUseCases {
     if (!doc.exists) {
       // Default settings
       const defaultSettings = { 
-        maintenanceMode: false, 
         privacyPolicyUrl: 'https://example.com/privacy', 
         termsOfServiceUrl: 'https://example.com/tos',
-        systemMessage: '',
-        flashSaleTimerSeconds: 7200
       };
       await this.docRef.set(defaultSettings);
       return defaultSettings;
     }
-    return doc.data();
+    
+    let data = doc.data() || {};
+    return data;
   }
 
   async updateSettings(updates: any): Promise<any> {
