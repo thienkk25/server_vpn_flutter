@@ -20,6 +20,8 @@ interface AdminState {
     isLoadingSettings: boolean;
     fetchSettings: () => Promise<void>;
     updateSettings: (settings: Partial<SettingsEntity>) => Promise<void>;
+    deleteServerRaw: (id: string) => Promise<void>;
+    importServersRaw: (servers: Partial<ServerEntity>[]) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -95,6 +97,22 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             set({ settings: { ...get().settings, ...settings } as SettingsEntity });
         } catch (error) {
             console.error('Failed to update settings:', error);
+            throw error;
+        }
+    },
+    deleteServerRaw: async (id: string) => {
+        try {
+            await adminRepository.deleteServer(id);
+        } catch (error) {
+            console.error('Failed to raw delete server:', error);
+            throw error;
+        }
+    },
+    importServersRaw: async (servers) => {
+        try {
+            await adminRepository.importServers(servers);
+        } catch (error) {
+            console.error('Failed to raw import servers:', error);
             throw error;
         }
     }

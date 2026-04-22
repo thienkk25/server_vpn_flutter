@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ServersPage() {
     const { t } = useTranslation();
-    const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, importServers, apiKey } = useAdminStore();
+    const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, deleteServerRaw, importServersRaw, apiKey } = useAdminStore();
 
     // Helper to conditionally Base64 encode if not already encoded
     const ensureBase64 = (text: string) => {
@@ -59,6 +59,9 @@ export default function ServersPage() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    const [deleteProgress, setDeleteProgress] = useState<{current: number, total: number} | null>(null);
+    const [importProgress, setImportProgress] = useState<{current: number, total: number} | null>(null);
 
     const filteredServers = servers.filter(s => {
         if (searchQuery) {
@@ -123,15 +126,22 @@ export default function ServersPage() {
         if (selectedIds.length === 0) return;
         if (window.confirm(t('serversPage.confirmDeleteBulk', { count: selectedIds.length }))) {
             setIsDeletingBulk(true);
+            setDeleteProgress({ current: 0, total: selectedIds.length });
             try {
-                for (const id of selectedIds) {
-                    await deleteServer(id);
+                // Chunk requests to process concurrently without overflowing connections
+                const CHUNK_SIZE = 6;
+                for (let i = 0; i < selectedIds.length; i += CHUNK_SIZE) {
+                    const chunk = selectedIds.slice(i, i + CHUNK_SIZE);
+                    await Promise.all(chunk.map(id => deleteServerRaw(id)));
+                    setDeleteProgress({ current: Math.min(i + CHUNK_SIZE, selectedIds.length), total: selectedIds.length });
                 }
+                await fetchServers();
                 setSelectedIds([]);
             } catch (error: any) {
                 alert(error.message || t('serversPage.failedDeleteBulk'));
             } finally {
                 setIsDeletingBulk(false);
+                setDeleteProgress(null);
             }
         }
     };
@@ -153,13 +163,21 @@ export default function ServersPage() {
             if (!Array.isArray(data)) throw new Error('Data should be an array of servers.');
 
             if (window.confirm(t('serversPage.importConfirm', { count: data.length }))) {
-                await importServers(data);
+                setImportProgress({ current: 0, total: data.length });
+                const CHUNK_SIZE = 50;
+                for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                    const chunk = data.slice(i, i + CHUNK_SIZE);
+                    await importServersRaw(chunk);
+                    setImportProgress({ current: Math.min(i + CHUNK_SIZE, data.length), total: data.length });
+                }
+                await fetchServers();
                 alert(t('serversPage.importSuccess'));
             }
         } catch (error: any) {
             alert(t('serversPage.importFailed') + ' ' + error.message);
         } finally {
             if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+            setImportProgress(null);
         }
     };
 
@@ -266,23 +284,35 @@ export default function ServersPage() {
 
     return (
         <div className="section content-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     {selectedIds.length > 0 && (
-                        <button className="action-btn delete" onClick={handleBulkDelete} disabled={isDeletingBulk || isLoadingServers} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', borderRadius: '8px', border: '1px solid currentColor' }}>
-                            <Trash2 size={16} /> {isDeletingBulk ? t('serversPage.deleting') : t('serversPage.deleteSelected', { count: selectedIds.length })}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button className="action-btn delete" onClick={handleBulkDelete} disabled={isDeletingBulk || isLoadingServers} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', borderRadius: '8px', border: '1px solid currentColor' }}>
+                                <Trash2 size={16} /> {isDeletingBulk ? t('serversPage.deleting') : t('serversPage.deleteSelected', { count: selectedIds.length })}
+                            </button>
+                            {deleteProgress && (
+                                <span className="text-muted" style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                    {deleteProgress.current} / {deleteProgress.total}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {importProgress && (
+                        <span className="text-muted" style={{ fontSize: '0.9rem', fontWeight: 'bold', marginRight: '10px' }}>
+                            Importing... {importProgress.current} / {importProgress.total}
+                        </span>
+                    )}
                     <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
-                    <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
+                    <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers || importProgress !== null}>
                         {t('serversPage.importJson')}
                     </button>
                     <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
                         <RefreshCw size={16} /> {t('serversPage.refresh')}
                     </button>
-                    <button className="primary-btn glow-effect" onClick={openCreate}>
+                    <button className="primary-btn glow-effect" onClick={openCreate} disabled={importProgress !== null}>
                         <Plus size={16} /> {t('serversPage.newServer')}
                     </button>
                 </div>
