@@ -18,4 +18,6 @@ export interface ServerEntity {
 export interface SettingsEntity {
     privacyPolicyUrl: string;
     termsOfServiceUrl: string;
+    privacyPolicyContent?: string;
+    termsOfServiceContent?: string;
 }

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useAdminStore } from './presentation/hooks/useAdminStore';
 import ServersPage from './presentation/pages/ServersPage';
 import SettingsPage from './presentation/pages/SettingsPage';
-import { LayoutDashboard, Settings, KeyRound, Globe, LogOut } from 'lucide-react';
+import LegalPage from './presentation/pages/LegalPage';
+import { LayoutDashboard, Settings, KeyRound, Globe, LogOut, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'servers' | 'settings'>('servers');
-  const [mountedTabs, setMountedTabs] = useState({ servers: true, settings: false });
+  const [activeTab, setActiveTab] = useState<'servers' | 'settings' | 'legal'>('servers');
+  const [mountedTabs, setMountedTabs] = useState({ servers: true, settings: false, legal: false });
   const { apiKey, setApiKey } = useAdminStore();
   const [loginKey, setLoginKey] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -19,7 +20,7 @@ function App() {
     i18n.changeLanguage(newLang);
   };
 
-  const handleTabChange = (tab: 'servers' | 'settings') => {
+  const handleTabChange = (tab: 'servers' | 'settings' | 'legal') => {
     setActiveTab(tab);
     if (!mountedTabs[tab]) {
       setMountedTabs(prev => ({ ...prev, [tab]: true }));
@@ -117,6 +118,10 @@ function App() {
             <LayoutDashboard size={20} />
             {t('sidebar.servers')}
           </a>
+          <a href="#" className={`nav-item ${activeTab === 'legal' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('legal'); }}>
+            <FileText size={20} />
+            {t('sidebar.legal')}
+          </a>
           <a href="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleTabChange('settings'); }}>
             <Settings size={20} />
             {t('sidebar.settings')}
@@ -141,10 +146,12 @@ function App() {
             <h2>
               {activeTab === 'servers' && t('header.servers')}
               {activeTab === 'settings' && t('header.settings')}
+              {activeTab === 'legal' && t('header.legal')}
             </h2>
             <p className="subtitle">
               {activeTab === 'servers' && t('header.serversDesc')}
               {activeTab === 'settings' && t('header.settingsDesc')}
+              {activeTab === 'legal' && t('header.legalDesc')}
             </p>
           </div>
 
@@ -164,6 +171,11 @@ function App() {
           {mountedTabs.servers && (
             <div style={{ display: activeTab === 'servers' ? 'block' : 'none', height: '100%' }}>
               <ServersPage />
+            </div>
+          )}
+          {mountedTabs.legal && (
+            <div style={{ display: activeTab === 'legal' ? 'block' : 'none', height: '100%' }}>
+              <LegalPage />
             </div>
           )}
           {mountedTabs.settings && (

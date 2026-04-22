@@ -5,6 +5,7 @@
     "users": "Users",
     "webhooks": "IAP Webhooks",
     "settings": "Settings",
+    "legal": "Legal Documents",
     "revenue": "Revenue",
     "apiKey": "API Key (Dev)",
     "save": "Save",
@@ -27,7 +28,9 @@
     "webhooks": "App Store Webhooks",
     "webhooksDesc": "Monitor real-time Apple In-App Purchase events",
     "settings": "App Settings",
-    "settingsDesc": "Configure global application behavior"
+    "settingsDesc": "Configure global application behavior",
+    "legal": "Legal Documents",
+    "legalDesc": "Manage your Privacy Policy and Terms of Service"
   },
   "revenue": {
     "title": "Revenue Analytics",
@@ -121,5 +124,16 @@
     "termsUrl": "Terms of Service URL",
     "saving": "Saving...",
     "saveSettings": "Save Settings"
+  },
+  "legalPage": {
+    "privacyTab": "Privacy Policy",
+    "termsTab": "Terms of Service",
+    "privacyContent": "Privacy Policy Content",
+    "termsContent": "Terms of Service Content",
+    "saveSuccess": "Legal documents saved successfully!",
+    "saveError": "Error saving legal documents",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes"
   }
 }

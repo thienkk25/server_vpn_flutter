@@ -5,6 +5,7 @@
     "users": "Người Dùng",
     "webhooks": "IAP Webhooks",
     "settings": "Cài Đặt",
+    "legal": "Tài Liệu Pháp Lý",
     "revenue": "Doanh Thu",
     "apiKey": "Khóa API (Dev)",
     "save": "Lưu",
@@ -27,7 +28,9 @@
     "webhooks": "App Store Webhooks",
     "webhooksDesc": "Giám sát sự kiện thanh toán in-app trực tiếp từ Apple",
     "settings": "Cài Đặt Ứng Dụng",
-    "settingsDesc": "Cấu hình hành vi chung của hệ thống"
+    "settingsDesc": "Cấu hình hành vi chung của hệ thống",
+    "legal": "Văn Bản Pháp Lý",
+    "legalDesc": "Quản lý Chính sách Bảo mật và Điều khoản Dịch vụ"
   },
   "revenue": {
     "title": "Thống Kê Doanh Thu",
@@ -121,5 +124,16 @@
     "termsUrl": "Đường dẫn Điều khoản Dịch vụ",
     "saving": "Đang lưu...",
     "saveSettings": "Lưu Cài Đặt"
+  },
+  "legalPage": {
+    "privacyTab": "Chính sách Bảo mật",
+    "termsTab": "Điều khoản Dịch vụ",
+    "privacyContent": "Nội dung Chính sách Bảo mật (Editor)",
+    "termsContent": "Nội dung Điều khoản Dịch vụ (Editor)",
+    "saveSuccess": "Đã lưu nội dung pháp lý thành công!",
+    "saveError": "Lỗi khi lưu văn bản pháp lý",
+    "loading": "Đang tải...",
+    "saving": "Đang lưu...",
+    "saveChanges": "Lưu Thay Đổi"
   }
 }

@@ -14,6 +14,8 @@ export class AdminSettingsUseCases {
       const defaultSettings = { 
         privacyPolicyUrl: 'https://example.com/privacy', 
         termsOfServiceUrl: 'https://example.com/tos',
+        privacyPolicyContent: '<h1>Privacy Policy</h1><p>Set your privacy policy content here.</p>',
+        termsOfServiceContent: '<h1>Terms of Service</h1><p>Set your terms of service content here.</p>',
       };
       await this.docRef.set(defaultSettings);
       return defaultSettings;
