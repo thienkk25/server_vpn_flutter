@@ -74,23 +74,41 @@ export default function LegalPage() {
                 
                 <div style={{ padding: '24px' }}>
                     <div style={{ marginBottom: '20px' }}>
+                        <style>{`
+                            .ql-container {
+                                min-height: 400px !important;
+                                font-size: 16px;
+                            }
+                            .ql-editor {
+                                min-height: 400px !important;
+                            }
+                            .ql-toolbar.ql-snow {
+                                border-top-left-radius: 8px;
+                                border-top-right-radius: 8px;
+                                border: none !important;
+                                border-bottom: 1px solid #ccc !important;
+                            }
+                            .ql-container.ql-snow {
+                                border-bottom-left-radius: 8px;
+                                border-bottom-right-radius: 8px;
+                                border: none !important;
+                            }
+                        `}</style>
                         <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
                             {activeTab === 'privacy' ? t('legalPage.privacyContent') : t('legalPage.termsContent')}
                         </label>
-                        <div style={{ background: 'white', color: 'black', borderRadius: '8px', overflow: 'hidden', display: activeTab === 'privacy' ? 'block' : 'none' }}>
+                        <div style={{ background: 'white', color: 'black', borderRadius: '8px', display: activeTab === 'privacy' ? 'block' : 'none', border: '1px solid #ccc' }}>
                             <ReactQuill 
                                 theme="snow" 
                                 value={privacyContent} 
                                 onChange={setPrivacyContent}
-                                style={{ height: '400px', border: 'none' }}
                             />
                         </div>
-                        <div style={{ background: 'white', color: 'black', borderRadius: '8px', overflow: 'hidden', display: activeTab === 'terms' ? 'block' : 'none' }}>
+                        <div style={{ background: 'white', color: 'black', borderRadius: '8px', display: activeTab === 'terms' ? 'block' : 'none', border: '1px solid #ccc' }}>
                             <ReactQuill 
                                 theme="snow" 
                                 value={termsContent} 
                                 onChange={setTermsContent}
-                                style={{ height: '400px', border: 'none' }}
                             />
                         </div>
                     </div>
