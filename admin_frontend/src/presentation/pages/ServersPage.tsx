@@ -1,17 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
-import { Edit2, Trash2, Plus, RefreshCw, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Plus, RefreshCw, Search, ChevronLeft, ChevronRight, Shield, Activity, X } from 'lucide-react';
 import type { ServerEntity } from '../../domain/entities/admin';
+import { useTranslation } from 'react-i18next';
 
 export default function ServersPage() {
+    const { t } = useTranslation();
     const { servers, isLoadingServers, fetchServers, saveServer, deleteServer, importServers, apiKey } = useAdminStore();
-    
+
     // Helper to conditionally Base64 encode if not already encoded
     const ensureBase64 = (text: string) => {
         if (!text || text.trim() === '') return '';
         const noSpaceStr = text.replace(/[\r\n\s]/g, '');
         const base64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-        
+
         if (base64Regex.test(noSpaceStr)) {
             try {
                 atob(noSpaceStr);
@@ -20,7 +22,7 @@ export default function ServersPage() {
                 // Ignore and encode
             }
         }
-        
+
         // Encode to base64
         const bytes = new TextEncoder().encode(text);
         const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
@@ -45,28 +47,28 @@ export default function ServersPage() {
     const filteredServers = servers.filter(s => {
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            if (!s.name?.toLowerCase().includes(q) && 
-                !s.region?.toLowerCase().includes(q) && 
+            if (!s.name?.toLowerCase().includes(q) &&
+                !s.region?.toLowerCase().includes(q) &&
                 !s.ip?.toLowerCase().includes(q)) {
                 return false;
             }
         }
-        
+
         if (protocolFilter !== 'all') {
             const hasOvpn = s.config ? true : s.onWireGuard !== 1;
             const hasWg = s.wireGuardConfig ? true : s.onWireGuard === 1;
-            
+
             if (protocolFilter === 'both' && (!s.config || !s.wireGuardConfig)) return false;
             if (protocolFilter === 'openvpn' && !hasOvpn) return false;
             if (protocolFilter === 'wireguard' && !hasWg) return false;
         }
-        
+
         if (statusFilter !== 'all') {
             const isActive = s.status === 1;
             if (statusFilter === 'active' && !isActive) return false;
             if (statusFilter === 'offline' && isActive) return false;
         }
-        
+
         return true;
     });
 
@@ -81,10 +83,10 @@ export default function ServersPage() {
 
     const toggleSelectAll = () => {
         if (paginatedServers.length === 0) return;
-        
+
         const paginatedIds = paginatedServers.map(s => s.id).filter(Boolean) as string[];
         const allSelected = paginatedIds.every(id => selectedIds.includes(id));
-        
+
         if (allSelected) {
             setSelectedIds(prev => prev.filter(id => !paginatedIds.includes(id)));
         } else {
@@ -103,7 +105,7 @@ export default function ServersPage() {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
-        if (window.confirm(`Are you sure you want to delete ${selectedIds.length} server(s)?`)) {
+        if (window.confirm(t('serversPage.confirmDeleteBulk', { count: selectedIds.length }))) {
             setIsDeletingBulk(true);
             try {
                 for (const id of selectedIds) {
@@ -111,7 +113,7 @@ export default function ServersPage() {
                 }
                 setSelectedIds([]);
             } catch (error: any) {
-                alert(error.message || 'Failed to delete some servers');
+                alert(error.message || t('serversPage.failedDeleteBulk'));
             } finally {
                 setIsDeletingBulk(false);
             }
@@ -133,13 +135,13 @@ export default function ServersPage() {
             const text = await file.text();
             const data = JSON.parse(text);
             if (!Array.isArray(data)) throw new Error('Data should be an array of servers.');
-            
-            if (window.confirm(`Found ${data.length} servers in file. Proceed to import?`)) {
+
+            if (window.confirm(t('serversPage.importConfirm', { count: data.length }))) {
                 await importServers(data);
-                alert('Import successful!');
+                alert(t('serversPage.importSuccess'));
             }
         } catch (error: any) {
-            alert('Failed to parse or import JSON: ' + error.message);
+            alert(t('serversPage.importFailed') + ' ' + error.message);
         } finally {
             if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
         }
@@ -155,7 +157,7 @@ export default function ServersPage() {
             if (form) {
                 // Show raw text in textarea for editing
                 form.config.value = text;
-                
+
                 // Parse IP
                 const remoteMatch = text.match(/remote\s+([a-zA-Z0-9.-]+)/i);
                 if (remoteMatch && remoteMatch[1]) {
@@ -170,7 +172,7 @@ export default function ServersPage() {
                 }
             }
         } catch (error: any) {
-            alert('Failed to read config file: ' + error.message);
+            alert(t('serversPage.readFailed') + ' ' + error.message);
         } finally {
             if (configFileInputRef.current) configFileInputRef.current.value = '';
         }
@@ -203,7 +205,7 @@ export default function ServersPage() {
             await saveServer(editingServer?.id || null, payload);
             setIsModalOpen(false);
         } catch (error: any) {
-            setErrorMsg(error.message || 'Failed to save server');
+            setErrorMsg(error.message || t('serversPage.failedSave'));
         } finally {
             setIsSaving(false);
         }
@@ -211,12 +213,12 @@ export default function ServersPage() {
 
     const handleDelete = async (id: string | undefined) => {
         if (!id) return;
-        if (window.confirm('Are you sure you want to delete this server?')) {
+        if (window.confirm(t('serversPage.confirmDelete'))) {
             setDeletingId(id);
             try {
                 await deleteServer(id);
             } catch (error: any) {
-                alert(error.message || 'Failed to delete server');
+                alert(error.message || t('serversPage.failedDelete'));
             } finally {
                 setDeletingId(null);
             }
@@ -241,61 +243,70 @@ export default function ServersPage() {
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     {selectedIds.length > 0 && (
                         <button className="action-btn delete" onClick={handleBulkDelete} disabled={isDeletingBulk || isLoadingServers} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', borderRadius: '8px', border: '1px solid currentColor' }}>
-                            <Trash2 size={16} /> {isDeletingBulk ? 'Deleting...' : `Delete Selected (${selectedIds.length})`}
+                            <Trash2 size={16} /> {isDeletingBulk ? t('serversPage.deleting') : t('serversPage.deleteSelected', { count: selectedIds.length })}
                         </button>
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <input type="file" accept=".json" style={{ display: 'none' }} ref={jsonFileInputRef} onChange={handleImportJSON} />
                     <button className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()} disabled={isLoadingServers}>
-                        Import JSON
+                        {t('serversPage.importJson')}
                     </button>
                     <button className="secondary-btn" onClick={fetchServers} disabled={isLoadingServers}>
-                        <RefreshCw size={16} /> Refresh
+                        <RefreshCw size={16} /> {t('serversPage.refresh')}
                     </button>
                     <button className="primary-btn glow-effect" onClick={openCreate}>
-                        <Plus size={16} /> New Server
+                        <Plus size={16} /> {t('serversPage.newServer')}
                     </button>
                 </div>
             </div>
 
-            <div className="filters-container" style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                <div className="search-box glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', flex: 1, minWidth: '250px' }}>
-                    <Search size={16} style={{ color: 'var(--text-muted)' }}/>
-                    <input 
-                        type="text" 
-                        placeholder="Search servers by name, region, or IP..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', width: '100%' }}
-                    />
+            <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(145deg, rgba(20, 24, 36, 0.8) 0%, rgba(15, 17, 26, 0.6) 100%)', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}>
+                <div style={{ flex: '1 1 300px', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', transition: 'all 0.3s ease' }} className="search-wrapper">
+                        <Search size={18} style={{ color: 'var(--accent-color)' }} />
+                        <input
+                            type="text"
+                            placeholder={t("serversPage.searchPlaceholder")}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', width: '100%', fontSize: '0.95rem' }}
+                        />
+                        {searchQuery && (
+                            <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }} onClick={() => setSearchQuery('')}>
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
                 </div>
-                
-                <div className="glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px' }}>
-                    <Filter size={16} style={{ color: 'var(--text-muted)' }} />
-                    <select 
-                        value={protocolFilter} 
-                        onChange={(e) => setProtocolFilter(e.target.value)}
-                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', padding: '8px 0', cursor: 'pointer' }}
-                    >
-                        <option value="all">All Protocols</option>
-                        <option value="openvpn">OpenVPN</option>
-                        <option value="wireguard">WireGuard</option>
-                        <option value="both">Both (OVPN + WG)</option>
-                    </select>
-                </div>
-                
-                <div className="glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px' }}>
-                    <Filter size={16} style={{ color: 'var(--text-muted)' }} />
-                    <select 
-                        value={statusFilter} 
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', padding: '8px 0', cursor: 'pointer' }}
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="offline">Offline</option>
-                    </select>
+
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        <Shield size={16} style={{ color: 'var(--text-muted)' }} />
+                        <select
+                            value={protocolFilter}
+                            onChange={(e) => setProtocolFilter(e.target.value)}
+                            style={{ border: 'none', background: 'transparent', color: 'var(--text-main)', outline: 'none', padding: '12px 0', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500 }}
+                        >
+                            <option value="all">{t('serversPage.allProtocols')}</option>
+                            <option value="openvpn">{t('serversPage.openvpn')}</option>
+                            <option value="wireguard">{t('serversPage.wireguard')}</option>
+                            <option value="both">{t('serversPage.bothProtocols')}</option>
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        <Activity size={16} style={{ color: 'var(--text-muted)' }} />
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            style={{ border: 'none', background: 'transparent', color: 'var(--text-main)', outline: 'none', padding: '12px 0', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500 }}
+                        >
+                            <option value="all">{t('serversPage.allStatuses')}</option>
+                            <option value="active">{t('serversPage.active')}</option>
+                            <option value="offline">{t('serversPage.offline')}</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -304,47 +315,47 @@ export default function ServersPage() {
                     <thead>
                         <tr>
                             <th style={{ width: '40px', textAlign: 'center' }}>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={paginatedServers.length > 0 && paginatedServers.every(s => selectedIds.includes(s.id!))}
-                                    onChange={toggleSelectAll} 
+                                    onChange={toggleSelectAll}
                                     style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                 />
                             </th>
-                            <th>Name</th>
-                            <th>Host / IP</th>
-                            <th>Protocol</th>
-                            <th>Status</th>
-                            <th>Tier</th>
-                            <th className="text-right">Actions</th>
+                            <th>{t('serversPage.nameCol')}</th>
+                            <th>{t('serversPage.hostCol')}</th>
+                            <th>{t('serversPage.protocolCol')}</th>
+                            <th>{t('serversPage.statusCol')}</th>
+                            <th>{t('serversPage.tier')}</th>
+                            <th className="text-right">{t('serversPage.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoadingServers ? (
                             <tr>
-                                <td colSpan={7} className="text-center loading-text">Loading servers...</td>
+                                <td colSpan={7} className="text-center loading-text">{t('serversPage.loading')}</td>
                             </tr>
                         ) : paginatedServers.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="text-center text-muted">No servers match your criteria.</td>
+                                <td colSpan={7} className="text-center text-muted">{t('serversPage.noMatch')}</td>
                             </tr>
                         ) : (
                             paginatedServers.map(server => (
                                 <tr key={server.id} style={{ backgroundColor: selectedIds.includes(server.id!) ? 'rgba(74, 158, 255, 0.05)' : 'inherit' }}>
                                     <td style={{ textAlign: 'center' }}>
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={selectedIds.includes(server.id!)}
-                                            onChange={() => toggleSelect(server.id)} 
+                                            onChange={() => toggleSelect(server.id)}
                                             style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                         />
                                     </td>
                                     <td><strong>{server.name}</strong></td>
                                     <td>{server.ip || '-'}</td>
-                                    <td>{server.config && server.wireGuardConfig ? 'OpenVPN + WireGuard' : server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}</td>
+                                    <td>{server.config && server.wireGuardConfig ? t('serversPage.bothProtocols') : server.onWireGuard === 1 ? t('serversPage.wireguard') : t('serversPage.openvpn')}</td>
                                     <td>
                                         <span className={`status-badge ${server.status === 1 ? 'active' : 'offline'}`}>
-                                            {server.status === 1 ? 'ACTIVE' : 'OFFLINE'}
+                                            {server.status === 1 ? t('serversPage.active').toUpperCase() : t('serversPage.offline').toUpperCase()}
                                         </span>
                                     </td>
                                     <td>
@@ -355,15 +366,15 @@ export default function ServersPage() {
                                                 color: server.isVip === 1 ? '#000' : 'var(--text-light)'
                                             }}
                                         >
-                                            {server.isVip === 1 ? 'VIP' : 'FREE'}
+                                            {server.isVip === 1 ? t('serversPage.vip') : t('serversPage.free')}
                                         </span>
                                     </td>
                                     <td className="text-right">
                                         <button className="action-btn edit" onClick={() => openEdit(server)} style={{ marginRight: 8 }} disabled={deletingId === server.id}>
-                                            <Edit2 size={14} /> Edit
+                                            <Edit2 size={14} /> {t('serversPage.edit')}
                                         </button>
                                         <button className="action-btn delete" onClick={() => handleDelete(server.id)} disabled={deletingId === server.id}>
-                                            <Trash2 size={14} /> {deletingId === server.id ? 'Deleting...' : 'Del'}
+                                            <Trash2 size={14} /> {deletingId === server.id ? t('serversPage.deleting') : t('serversPage.del')}
                                         </button>
 
                                     </td>
@@ -378,10 +389,10 @@ export default function ServersPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '0 8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span className="text-muted" style={{ fontSize: '14px' }}>
-                            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredServers.length)} of {filteredServers.length} servers
+                            {t('serversPage.showing', { start: startIndex + 1, end: Math.min(startIndex + itemsPerPage, filteredServers.length), total: filteredServers.length })}
                         </span>
-                        <select 
-                            className="glass-input" 
+                        <select
+                            className="glass-input"
                             style={{ padding: '4px 8px', width: 'auto', minWidth: '70px', fontSize: '14px' }}
                             value={itemsPerPage}
                             onChange={(e) => {
@@ -395,10 +406,10 @@ export default function ServersPage() {
                             <option value={100}>100</option>
                         </select>
                     </div>
-                    
+
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button 
-                            className="secondary-btn" 
+                        <button
+                            className="secondary-btn"
                             disabled={validCurrentPage === 1}
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             style={{ padding: '6px' }}
@@ -406,10 +417,10 @@ export default function ServersPage() {
                             <ChevronLeft size={16} />
                         </button>
                         <span style={{ fontSize: '14px', margin: '0 8px' }}>
-                            Page {validCurrentPage} of {totalPages}
+                            {t('serversPage.page', { current: validCurrentPage, total: totalPages })}
                         </span>
-                        <button 
-                            className="secondary-btn" 
+                        <button
+                            className="secondary-btn"
                             disabled={validCurrentPage === totalPages}
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             style={{ padding: '6px' }}
@@ -424,7 +435,7 @@ export default function ServersPage() {
                 <div className="modal-overlay">
                     <div className="modal-content glass-panel">
                         <div className="modal-header">
-                            <h3>{editingServer ? 'Edit Server' : 'Add New Server'}</h3>
+                            <h3>{editingServer ? t('serversPage.editServer') : t('serversPage.addServer')}</h3>
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
@@ -436,68 +447,68 @@ export default function ServersPage() {
                             <form id="serverForm" onSubmit={handleSave}>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Server Name</label>
-                                        <input type="text" name="name" className="glass-input" required defaultValue={editingServer?.name} placeholder="e.g. US East 1" />
+                                        <label>{t('serversPage.serverName')}</label>
+                                        <input type="text" name="name" className="glass-input" required defaultValue={editingServer?.name} placeholder={t("serversPage.namePlaceholder")} />
                                     </div>
                                     <div className="form-group">
-                                        <label>Region</label>
-                                        <input type="text" name="region" className="glass-input" required defaultValue={editingServer?.region || ''} placeholder="e.g. US, SG..." />
+                                        <label>{t('serversPage.region')}</label>
+                                        <input type="text" name="region" className="glass-input" required defaultValue={editingServer?.region || ''} placeholder={t("serversPage.regionPlaceholder")} />
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Host (IP/Domain)</label>
-                                    <input type="text" name="ip" className="glass-input" required defaultValue={editingServer?.ip} placeholder="192.168.1.1" />
+                                    <label>{t('serversPage.hostIp')}</label>
+                                    <input type="text" name="ip" className="glass-input" required defaultValue={editingServer?.ip} placeholder={t("serversPage.hostPlaceholder")} />
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Protocol</label>
+                                        <label>{t('serversPage.protocol')}</label>
                                         <select name="protocol" className="glass-input" defaultValue={editingServer?.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}>
                                             <option value="OpenVPN">OpenVPN</option>
                                             <option value="WireGuard">WireGuard</option>
                                         </select>
                                     </div>
                                     <div className="form-group">
-                                        <label>Status</label>
+                                        <label>{t('serversPage.status')}</label>
                                         <select name="status" className="glass-input" defaultValue={editingServer?.status === 1 ? 'active' : 'offline'}>
-                                            <option value="active">Active</option>
-                                            <option value="offline">Offline</option>
+                                            <option value="active">{t('serversPage.active')}</option>
+                                            <option value="offline">{t('serversPage.offline')}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <input type="checkbox" name="isVip" id="serverIsVip" defaultChecked={editingServer?.isVip === 1} style={{ width: 16, height: 16 }} />
-                                    <label htmlFor="serverIsVip" style={{ margin: 0, padding: 0 }}>Require VIP Subscription</label>
+                                    <label htmlFor="serverIsVip" style={{ margin: 0, padding: 0 }}>{t('serversPage.requireVip')}</label>
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Username</label>
-                                        <input type="text" name="username" className="glass-input" defaultValue={editingServer?.username || ''} placeholder="e.g. vpn" />
+                                        <label>{t('serversPage.username')}</label>
+                                        <input type="text" name="username" className="glass-input" defaultValue={editingServer?.username || ''} placeholder={t("serversPage.usernamePlaceholder")} />
                                     </div>
                                     <div className="form-group">
-                                        <label>Version</label>
-                                        <input type="number" name="version" className="glass-input" defaultValue={editingServer?.version || 1} placeholder="e.g. 1" min="1" />
+                                        <label>{t('serversPage.version')}</label>
+                                        <input type="number" name="version" className="glass-input" defaultValue={editingServer?.version || 1} placeholder={t("serversPage.versionPlaceholder")} min="1" />
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Password (Optional)</label>
-                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder="Leave empty if none" />
+                                    <label>{t('serversPage.password')}</label>
+                                    <input type="password" name="password" className="glass-input" defaultValue={editingServer?.password || ''} placeholder={t("serversPage.passwordPlaceholder")} />
                                 </div>
                                 <div className="form-group">
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <label style={{ margin: 0 }}>Raw Config</label>
+                                        <label style={{ margin: 0 }}>{t('serversPage.rawConfig')}</label>
                                         <input type="file" accept=".ovpn,.conf" style={{ display: 'none' }} ref={configFileInputRef} onChange={handleUploadConfig} />
                                         <button type="button" className="secondary-btn" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => configFileInputRef.current?.click()}>
-                                            Upload File
+                                            {t('serversPage.uploadFile')}
                                         </button>
                                     </div>
-                                    <textarea name="config" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || editingServer?.config || ''} placeholder="Paste OpenVPN or WireGuard config here..."></textarea>
+                                    <textarea name="config" className="glass-input" rows={5} defaultValue={editingServer?.wireGuardConfig || editingServer?.config || ''} placeholder={t("serversPage.configPlaceholder")}></textarea>
                                 </div>
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+                            <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)} disabled={isSaving}>{t('serversPage.cancel')}</button>
                             <button type="submit" form="serverForm" className="primary-btn glow-effect" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Server'}
+                                {isSaving ? t('serversPage.saving') : t('serversPage.saveServer')}
                             </button>
                         </div>
                     </div>

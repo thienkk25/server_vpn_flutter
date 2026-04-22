@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
+    const { t } = useTranslation();
     const { settings, isLoadingSettings, fetchSettings, updateSettings, apiKey } = useAdminStore();
     const [isSaving, setIsSaving] = useState(false);
 
@@ -19,16 +21,16 @@ export default function SettingsPage() {
                 privacyPolicyUrl: formData.get('privacyPolicyUrl') as string,
                 termsOfServiceUrl: formData.get('termsOfServiceUrl') as string,
             });
-            alert('Settings saved successfully!');
+            alert(t('settingsPage.saveSuccess'));
         } catch (error) {
-            alert('Error saving settings');
+            alert(t('settingsPage.saveError'));
         } finally {
             setIsSaving(false);
         }
     };
 
     if (isLoadingSettings) {
-        return <div className="text-center loading-text">Loading settings...</div>;
+        return <div className="text-center loading-text">{t('settingsPage.loading')}</div>;
     }
 
     return (
@@ -37,7 +39,7 @@ export default function SettingsPage() {
                 <form id="settingsForm" onSubmit={handleSave}>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Privacy Policy URL</label>
+                            <label>{t('settingsPage.privacyUrl')}</label>
                             <input 
                                 type="url" 
                                 name="privacyPolicyUrl" 
@@ -47,7 +49,7 @@ export default function SettingsPage() {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Terms of Service URL</label>
+                            <label>{t('settingsPage.termsUrl')}</label>
                             <input 
                                 type="url" 
                                 name="termsOfServiceUrl" 
@@ -59,7 +61,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="form-group text-right" style={{ marginTop: '20px' }}>
                         <button type="submit" disabled={isSaving} className="primary-btn glow-effect">
-                            {isSaving ? 'Saving...' : 'Save Settings'}
+                            {isSaving ? t('settingsPage.saving') : t('settingsPage.saveSettings')}
                         </button>
                     </div>
                 </form>
