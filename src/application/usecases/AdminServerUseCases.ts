@@ -5,7 +5,12 @@ import crypto from 'crypto';
 export class GetAllServersAdminUseCase {
   constructor(private serverRepository: IServerRepository) { }
   async execute(): Promise<ServerEntity[]> {
-    return this.serverRepository.getAllServers();
+    const servers = await this.serverRepository.getAllServers();
+    return servers.sort((a, b) => {
+      const nameCompare = (a.name || '').localeCompare(b.name || '');
+      if (nameCompare !== 0) return nameCompare;
+      return (a.region || '').localeCompare(b.region || '');
+    });
   }
 }
 
