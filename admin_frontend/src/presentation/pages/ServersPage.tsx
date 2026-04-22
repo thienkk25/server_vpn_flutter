@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAdminStore } from '../hooks/useAdminStore';
-import { Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
+import { Edit2, Trash2, Plus, RefreshCw, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ServerEntity } from '../../domain/entities/admin';
 
 export default function ServersPage() {
@@ -35,13 +35,60 @@ export default function ServersPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [protocolFilter, setProtocolFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    const filteredServers = servers.filter(s => {
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            if (!s.name?.toLowerCase().includes(q) && 
+                !s.region?.toLowerCase().includes(q) && 
+                !s.ip?.toLowerCase().includes(q)) {
+                return false;
+            }
+        }
+        
+        if (protocolFilter !== 'all') {
+            const hasOvpn = s.config ? true : s.onWireGuard !== 1;
+            const hasWg = s.wireGuardConfig ? true : s.onWireGuard === 1;
+            
+            if (protocolFilter === 'both' && (!s.config || !s.wireGuardConfig)) return false;
+            if (protocolFilter === 'openvpn' && !hasOvpn) return false;
+            if (protocolFilter === 'wireguard' && !hasWg) return false;
+        }
+        
+        if (statusFilter !== 'all') {
+            const isActive = s.status === 1;
+            if (statusFilter === 'active' && !isActive) return false;
+            if (statusFilter === 'offline' && isActive) return false;
+        }
+        
+        return true;
+    });
+
+    const totalPages = Math.ceil(filteredServers.length / itemsPerPage) || 1;
+    const validCurrentPage = Math.min(currentPage, totalPages);
+    const startIndex = (validCurrentPage - 1) * itemsPerPage;
+    const paginatedServers = filteredServers.slice(startIndex, startIndex + itemsPerPage);
+
+    useEffect(() => {
+        if (currentPage > totalPages) setCurrentPage(totalPages);
+    }, [totalPages, currentPage]);
+
     const toggleSelectAll = () => {
-        if (servers.length === 0) return;
-        if (selectedIds.length === servers.length) {
-            setSelectedIds([]);
+        if (paginatedServers.length === 0) return;
+        
+        const paginatedIds = paginatedServers.map(s => s.id).filter(Boolean) as string[];
+        const allSelected = paginatedIds.every(id => selectedIds.includes(id));
+        
+        if (allSelected) {
+            setSelectedIds(prev => prev.filter(id => !paginatedIds.includes(id)));
         } else {
-            const validIds = servers.map(s => s.id).filter(Boolean) as string[];
-            setSelectedIds(validIds);
+            setSelectedIds(prev => Array.from(new Set([...prev, ...paginatedIds])));
         }
     };
 
@@ -212,6 +259,46 @@ export default function ServersPage() {
                 </div>
             </div>
 
+            <div className="filters-container" style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <div className="search-box glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', flex: 1, minWidth: '250px' }}>
+                    <Search size={16} style={{ color: 'var(--text-muted)' }}/>
+                    <input 
+                        type="text" 
+                        placeholder="Search servers by name, region, or IP..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', width: '100%' }}
+                    />
+                </div>
+                
+                <div className="glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px' }}>
+                    <Filter size={16} style={{ color: 'var(--text-muted)' }} />
+                    <select 
+                        value={protocolFilter} 
+                        onChange={(e) => setProtocolFilter(e.target.value)}
+                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', padding: '8px 0', cursor: 'pointer' }}
+                    >
+                        <option value="all">All Protocols</option>
+                        <option value="openvpn">OpenVPN</option>
+                        <option value="wireguard">WireGuard</option>
+                        <option value="both">Both (OVPN + WG)</option>
+                    </select>
+                </div>
+                
+                <div className="glass-input" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px' }}>
+                    <Filter size={16} style={{ color: 'var(--text-muted)' }} />
+                    <select 
+                        value={statusFilter} 
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={{ border: 'none', background: 'transparent', color: 'inherit', outline: 'none', padding: '8px 0', cursor: 'pointer' }}
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="offline">Offline</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="table-container glass-panel">
                 <table className="data-table">
                     <thead>
@@ -219,7 +306,7 @@ export default function ServersPage() {
                             <th style={{ width: '40px', textAlign: 'center' }}>
                                 <input 
                                     type="checkbox" 
-                                    checked={servers.length > 0 && selectedIds.length === servers.length}
+                                    checked={paginatedServers.length > 0 && paginatedServers.every(s => selectedIds.includes(s.id!))}
                                     onChange={toggleSelectAll} 
                                     style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
                                 />
@@ -237,12 +324,12 @@ export default function ServersPage() {
                             <tr>
                                 <td colSpan={7} className="text-center loading-text">Loading servers...</td>
                             </tr>
-                        ) : servers.length === 0 ? (
+                        ) : paginatedServers.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="text-center text-muted">No servers found. Add one to get started.</td>
+                                <td colSpan={7} className="text-center text-muted">No servers match your criteria.</td>
                             </tr>
                         ) : (
-                            servers.map(server => (
+                            paginatedServers.map(server => (
                                 <tr key={server.id} style={{ backgroundColor: selectedIds.includes(server.id!) ? 'rgba(74, 158, 255, 0.05)' : 'inherit' }}>
                                     <td style={{ textAlign: 'center' }}>
                                         <input 
@@ -254,7 +341,7 @@ export default function ServersPage() {
                                     </td>
                                     <td><strong>{server.name}</strong></td>
                                     <td>{server.ip || '-'}</td>
-                                    <td>{server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}</td>
+                                    <td>{server.config && server.wireGuardConfig ? 'OpenVPN + WireGuard' : server.onWireGuard === 1 ? 'WireGuard' : 'OpenVPN'}</td>
                                     <td>
                                         <span className={`status-badge ${server.status === 1 ? 'active' : 'offline'}`}>
                                             {server.status === 1 ? 'ACTIVE' : 'OFFLINE'}
@@ -286,6 +373,52 @@ export default function ServersPage() {
                     </tbody>
                 </table>
             </div>
+
+            {filteredServers.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '0 8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span className="text-muted" style={{ fontSize: '14px' }}>
+                            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredServers.length)} of {filteredServers.length} servers
+                        </span>
+                        <select 
+                            className="glass-input" 
+                            style={{ padding: '4px 8px', width: 'auto', minWidth: '70px', fontSize: '14px' }}
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button 
+                            className="secondary-btn" 
+                            disabled={validCurrentPage === 1}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            style={{ padding: '6px' }}
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <span style={{ fontSize: '14px', margin: '0 8px' }}>
+                            Page {validCurrentPage} of {totalPages}
+                        </span>
+                        <button 
+                            className="secondary-btn" 
+                            disabled={validCurrentPage === totalPages}
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            style={{ padding: '6px' }}
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div className="modal-overlay">
