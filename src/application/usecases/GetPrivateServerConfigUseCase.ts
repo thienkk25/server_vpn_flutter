@@ -7,7 +7,7 @@ export class GetPrivateServerConfigUseCase {
 
   async execute(serverId: string): Promise<any> {
     const servers = await this.serverRepository.getAllServers();
-    const server = servers.find(s => s.id === serverId);
+    const server = servers.find(s => s.id?.toString() === serverId);
 
     if (!server) {
       throw new Error('404: Server not found.');
